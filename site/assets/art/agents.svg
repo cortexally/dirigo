@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!--
+    Иконки агентов Dirigo — единый визуальный язык: скруглённый тайл с
+    градиентом + узнаваемый глиф. Инлайн-использование через <use href="#ag-*">.
+  -->
+  <defs>
+    <linearGradient id="g-opencode" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7c5cff"/><stop offset="1" stop-color="#4f2fd4"/></linearGradient>
+    <linearGradient id="g-kilo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#0284c7"/></linearGradient>
+    <linearGradient id="g-cursor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient>
+    <linearGradient id="g-devin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#6d28d9"/></linearGradient>
+    <linearGradient id="g-hermes" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f472b6"/><stop offset="1" stop-color="#be185d"/></linearGradient>
+    <linearGradient id="g-zcode" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#34d399"/><stop offset="1" stop-color="#047857"/></linearGradient>
+    <linearGradient id="g-minimax" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fb7185"/><stop offset="1" stop-color="#be123c"/></linearGradient>
+    <linearGradient id="g-claude" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d97757"/><stop offset="1" stop-color="#a04a2c"/></linearGradient>
+    <linearGradient id="g-codex" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10b981"/><stop offset="1" stop-color="#065f46"/></linearGradient>
+    <linearGradient id="g-copilot" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#94a3b8"/><stop offset="1" stop-color="#334155"/></linearGradient>
+    <linearGradient id="g-gemini" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f59e0b"/><stop offset="1" stop-color="#b45309"/></linearGradient>
+    <linearGradient id="g-freebuff" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2dd4bf"/><stop offset="1" stop-color="#0f766e"/></linearGradient>
+    <linearGradient id="g-cline" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c084fc"/><stop offset="1" stop-color="#7e22ce"/></linearGradient>
+  </defs>
+
+  <!-- opencode: терминальный курсор в скобке -->
+  <symbol id="ag-opencode" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-opencode)"/>
+    <path d="M9 11h14M9 16h9M9 21h11" stroke="#fff" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+    <path d="M21 20.5l3 2.5-3 2.5z" fill="#fff"/>
+  </symbol>
+
+  <!-- kilo: молния K -->
+  <symbol id="ag-kilo" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-kilo)"/>
+    <path d="M11 8v16M11 16l8-8M11 16l7 7" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- cursor: курсор-стрелка -->
+  <symbol id="ag-cursor" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-cursor)"/>
+    <path d="M10 8l13 7-5.5 1.5L15 22z" fill="#fff"/>
+  </symbol>
+
+  <!-- devin: шестерёнчатый круг -->
+  <symbol id="ag-devin" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-devin)"/>
+    <circle cx="16" cy="16" r="6" fill="none" stroke="#fff" stroke-width="2.6"/>
+    <path d="M16 5v4M16 23v4M5 16h4M23 16h4M8.7 8.7l2.8 2.8M20.5 20.5l2.8 2.8M23.3 8.7l-2.8 2.8M11.5 20.5l-2.8 2.8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- hermes: крыло -->
+  <symbol id="ag-hermes" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-hermes)"/>
+    <path d="M7 21c4-9 10-13 18-13-2 3-2 6 0 8-4 1-7 4-8 8-2-1-4-2-5-3 1-3 1-6-1-8 1 5 0 9-4 8z" fill="#fff"/>
+  </symbol>
+
+  <!-- zcode: Z + молния -->
+  <symbol id="ag-zcode" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-zcode)"/>
+    <path d="M10 9h12l-9 10h9" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M19 21l4 4-4 4" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- minimax: две вершины M -->
+  <symbol id="ag-minimax" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-minimax)"/>
+    <path d="M7 23V9l9 9 9-9v14" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- claude: звезда/всполох (стилизация под Anthropic) -->
+  <symbol id="ag-claude" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-claude)"/>
+    <path d="M16 6l2.6 6.4L25 15l-6.4 2.6L16 24l-2.6-6.4L7 15l6.4-2.6z" fill="#fff"/>
+  </symbol>
+
+  <!-- codex: узел (стилизация) -->
+  <symbol id="ag-codex" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-codex)"/>
+    <path d="M16 7c5 0 9 4 9 9s-4 9-9 9-9-4-9-9h4c0 3 2 5 5 5s5-2 5-5-2-5-5-5z" fill="#fff"/>
+    <circle cx="16" cy="16" r="2.6" fill="#fff"/>
+  </symbol>
+
+  <!-- copilot: крылья/код -->
+  <symbol id="ag-copilot" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-copilot)"/>
+    <path d="M10 12l-4 4 4 4M22 12l4 4-4 4M18 9l-4 14" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- gemini: искра -->
+  <symbol id="ag-gemini" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-gemini)"/>
+    <path d="M16 5c2 6 6 9 11 10-5 1-9 4-11 12-2-8-6-11-11-12 5-1 9-4 11-12z" fill="#fff"/>
+  </symbol>
+
+  <!-- freebuff: кольца -->
+  <symbol id="ag-freebuff" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-freebuff)"/>
+    <circle cx="12" cy="16" r="5.5" fill="none" stroke="#fff" stroke-width="2.4"/>
+    <circle cx="20" cy="16" r="5.5" fill="none" stroke="#fff" stroke-width="2.4" opacity=".65"/>
+  </symbol>
+
+  <!-- cline: треугольник-искра -->
+  <symbol id="ag-cline" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-cline)"/>
+    <path d="M16 7l9 18H7z" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M16 14v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+  </symbol>
+</svg>

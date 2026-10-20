@@ -1,0 +1,30 @@
+# Переводы строк фиксируем явно: продукт разрабатывается на Windows, а
+# запускается в том числе на Linux. Shell-скрипт с CRLF падает на первой
+# строке — "bad interpreter: /usr/bin/env bash^M", и это невозможно
+# диагностировать по сообщению.
+
+# По умолчанию — нормализация текста в репозитории к LF.
+* text=auto eol=lf
+
+# Файлы, которые исполняет оболочка: только LF, всегда.
+*.sh        text eol=lf
+orch        text eol=lf
+start.sh    text eol=lf
+
+# Файлы Windows: только CRLF, иначе cmd.exe ведёт себя непредсказуемо.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# Двоичное — не трогать.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.woff      binary
+*.woff2     binary
+*.gz        binary
+*.zip       binary
+*.mp4       binary
+*.wasm      binary

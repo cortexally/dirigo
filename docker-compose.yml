@@ -1,0 +1,29 @@
+# Dirigo — compose для self-host.
+#
+#   cp .env.example .env   # задай DIRIGO_TOKEN (обязательно для публичного хоста!)
+#   docker compose up -d --build
+#   open http://<host>:7171
+#
+# Данные (db.json, logs/, work/) — в volume ./data. Код — read-only.
+# CLI-агентов в образе нет: см. README «Self-host» про монтирование бинарников.
+
+services:
+  dirigo:
+    build: .
+    container_name: dirigo
+    restart: unless-stopped
+    ports:
+      - "${DIRIGO_PORT:-7171}:7171"
+    volumes:
+      - ./data:/data
+      # проекты, с которыми работаешь, — из хоста (read-only: агенты пишут только в копии)
+      - ${DIRIGO_PROJECTS_PATH:-./projects}:/projects:ro
+    environment:
+      # токен доступа к API/UI. Пусто = авторизация отключена (только для локальной песочницы!)
+      DIRIGO_TOKEN: ${DIRIGO_TOKEN:-}
+      # лимиты копий проекта (движок data/work)
+      DIRIGO_MAX_WORKTREES: ${DIRIGO_MAX_WORKTREES:-8}
+      DIRIGO_WORKTREE_TTL_HOURS: ${DIRIGO_WORKTREE_TTL_HOURS:-24}
+      # rate-limit общего API (0 — выключен; loopback-режим по умолчанию)
+      DIRIGO_RL_API_MAX: ${DIRIGO_RL_API_MAX:-0}
+      DIRIGO_RL_API_WIN_MS: ${DIRIGO_RL_API_WIN_MS:-60000}

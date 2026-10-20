@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Dirigo — CLI (macOS/Linux). Использование: ./orch <команда> [аргументы]
+# Требуется bun. Адрес демона: --host или DIRIGO_HOST.
+# Примеры: ./orch health · ./orch run hermes "задача" --copy · ./orch setup
+set -e
+cd "$(dirname "$0")"
+export DIRIGO_HOST="${DIRIGO_HOST:-http://127.0.0.1:7171}"
+exec bun run scripts/orch.ts "$@"

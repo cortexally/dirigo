@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Панель отдаётся браузеру как есть — TypeScript-синтаксис в web/app.js
+      # ломает интерфейс целиком, поэтому это первый и самый дешёвый гейт.
+      - name: UI parses as browser JS
+        run: bun build web/app.js --target=browser --outdir=/tmp/ui-build
+
+      # Демон обязан стартовать без нативных модулей: node-pty опционален.
+      - name: Daemon boots without optional native deps
+        run: |
+          DIRIGO_DATA=/tmp/dirigo-ci PORT=7399 bun run src/server.ts &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:7399/api/health > /tmp/health.json; then break; fi
+            sleep 0.5
+          done
+          cat /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+
+      # На раннере нет ни одного агентского CLI, поэтому эталон — 169/179.
+      # Порог 165, а не 169: под параллельной нагрузкой сьют иногда отдаёт 168.
+      # Любое число НИЖЕ порога означает регрессию, а не отсутствие агентов.
+      - name: Smoke suite
+        run: |
+          set -o pipefail
+          SMOKE_PORT=7411 DIRIGO_DATA=/tmp/dirigo-smoke bun run scripts/smoke.ts | tee /tmp/smoke.log
+          passed=$(grep -oE '[0-9]+/[0-9]+ passed' /tmp/smoke.log | tail -1 | cut -d/ -f1)
+          echo "passed=$passed"
+          test "${passed:-0}" -ge 165

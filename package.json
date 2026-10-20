@@ -1,0 +1,76 @@
+{
+  "name": "dirigo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted control panel for AI coding agents: isolated git worktrees, automatic checks, per-line review.",
+  "license": "MIT",
+  "homepage": "https://github.com/cortexally/dirigo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cortexally/dirigo.git"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "devDependencies": {
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/addon-serialize": "0.13.0",
+    "@xterm/addon-unicode11": "0.8.0",
+    "@xterm/headless": "5.5.0",
+    "@xterm/xterm": "5.5.0",
+    "playwright": "^1.64.0"
+  },
+  "scripts": {
+    "e2e": "bun run scripts/ui-audit.ts",
+    "smoke": "bun run scripts/smoke.ts",
+    "smoke-security": "bun run scripts/smoke-security.ts",
+    "test:worktrees": "bun run scripts/worktree-test.ts",
+    "test:checks": "bun run scripts/checks-test.ts",
+    "test:orchestrator": "bun run scripts/orchestrator-test.ts",
+    "test:swarm": "bun run scripts/swarm-test.ts",
+    "test:git": "bun run scripts/git-test.ts",
+    "test:fusion": "bun run scripts/fusion-test.ts",
+    "test:resolver": "bun run scripts/resolver-test.ts",
+    "test:screen": "bun run scripts/screen-test.ts",
+    "test:diagnose": "bun run scripts/diagnose-test.ts",
+    "test:launcher": "bun run scripts/launcher-test.ts",
+    "test:matrix": "bun run scripts/agent-matrix.ts",
+    "test:setup": "bun run scripts/setup-test.ts",
+    "test:deploy": "bun run scripts/deploy-test.ts",
+    "qr:test": "bun run scripts/qr-test.ts",
+    "e2e:queue": "bun run scripts/e2e-queue.ts",
+    "e2e:sdk": "bun run scripts/e2e-sdk.ts",
+    "e2e:diff": "bun run scripts/e2e-diff.ts",
+    "e2e:board": "bun run scripts/e2e-board.ts",
+    "test:monorepo": "bun run scripts/monorepo-subdir-test.ts",
+    "e2e:cli": "bun run scripts/cli-e2e.ts",
+    "lint:imports": "bun run scripts/imports-lint.ts",
+    "test:cli-isolation": "bun run scripts/cli-e2e-isolation-test.ts",
+    "test:orch-json": "bun run scripts/orch-json-test.ts",
+    "test:live-session": "bun run scripts/live-session-test.ts",
+    "bundle": "bun run scripts/bundle-native.ts",
+    "e2e:mcp": "bun run scripts/e2e-mcp.ts",
+    "sec:install-review": "bun run scripts/install-security-review.ts",
+    "verify:flows": "bun run scripts/verify-flows.ts",
+    "pre-release": "bun run scripts/pre-release.ts",
+    "cli": "bun run scripts/orch.ts",
+    "start": "bun run src/server.ts",
+    "test:provenance": "bun run scripts/provenance-test.ts",
+    "test:policy": "bun run scripts/policy-test.ts",
+    "test:knowledge": "bun run scripts/knowledge-test.ts",
+    "e2e:evidence": "bun run scripts/e2e-evidence.ts",
+    "e2e:terminal": "bun run scripts/e2e-terminal.ts",
+    "vendor:xterm": "bun run scripts/vendor-xterm.ts",
+    "e2e:scenarios": "bun run scripts/e2e-scenarios.ts",
+    "test:tui-flags": "bun run scripts/tui-flags-test.ts",
+    "test:registry": "bun run scripts/registry-test.ts",
+    "test:daemons": "bun run scripts/daemons-test.ts"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.1.0"
+  },
+  "trustedDependencies": [
+    "node-pty"
+  ]
+}

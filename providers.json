@@ -1,0 +1,55 @@
+{
+  "_doc": "Провайдеры моделей dirigo (V2-5.1). Демон не хранит ключи — только описание маршрутов. baseUrl + envVar: ключ читается из окружения ДЕМОНА (или агента-обёртки). Модель задаётся строкой provider/model в UI/CLI.",
+  "providers": [
+    {
+      "id": "kilo-gateway",
+      "label": "Kilo Gateway",
+      "kind": "gateway",
+      "baseUrl": "http://127.0.0.1:7271",
+      "api": "anthropic-compatible",
+      "envVar": "KILO_API_KEY",
+      "models": ["kilo/kilo-auto/free"],
+      "notes": "локальный шлюз демона; free-tier работает для CLI-моделей"
+    },
+    {
+      "id": "openrouter",
+      "label": "OpenRouter",
+      "kind": "cloud",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "api": "openai-compatible",
+      "envVar": "OPENROUTER_API_KEY",
+      "models": ["openrouter/auto", "openrouter/anthropic/claude-sonnet-4"],
+      "notes": "один ключ — сотни моделей; лимиты по тарифу провайдера"
+    },
+    {
+      "id": "opencode-zen",
+      "label": "opencode Zen",
+      "kind": "cloud",
+      "baseUrl": "https://opencode.ai/zen/v1",
+      "api": "openai-compatible",
+      "envVar": "OPENCODE_API_KEY",
+      "models": ["opencode/grok-code", "opencode/qwen3-coder"],
+      "notes": "модели для агента opencode (задаются через --model)"
+    },
+    {
+      "id": "anthropic",
+      "label": "Anthropic",
+      "kind": "cloud",
+      "baseUrl": "https://api.anthropic.com",
+      "api": "anthropic-compatible",
+      "envVar": "ANTHROPIC_API_KEY",
+      "models": ["anthropic/claude-sonnet-4-5", "anthropic/claude-haiku-4"],
+      "notes": "прямой доступ; для агентов с anthropic-совместимым API"
+    },
+    {
+      "id": "local",
+      "label": "Локальная (ollama/lmstudio)",
+      "kind": "local",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "api": "openai-compatible",
+      "envVar": "",
+      "models": ["local/qwen2.5-coder", "local/llama3.1"],
+      "notes": "ключ не нужен; адрес зависти от локального сервера"
+    }
+  ]
+}

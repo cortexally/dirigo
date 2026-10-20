@@ -1,0 +1,17 @@
+{
+  "_doc": "Лёгкие плагины-data (V2-5.3): дополнительные web-панели и ссылки для пульта. Формат стабилен; добавляй записи без правки кода. Панели открываются во фрейме (CSP frame-src http:/https:), ссылки — в новой вкладке.",
+  "panels": [
+    {
+      "id": "github",
+      "title": "GitHub",
+      "url": "https://github.com",
+      "kind": "frame",
+      "hint": "внешняя панель во фрейме"
+    }
+  ],
+  "links": [
+    { "id": "docs", "title": "Документация v2", "url": "./docs/ARCHITECTURE.md" },
+    { "id": "skills", "title": "Скиллы проекта", "url": "./skills/README.md" },
+    { "id": "providers", "title": "Провайдеры моделей", "url": "./providers.json" }
+  ]
+}

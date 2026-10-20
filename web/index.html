@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="modern-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dirigo — команда ИИ-агентов</title>
+<meta name="description" content="Мульти-агентная среда разработки: агенты работают в копии проекта, вы принимаете результат.">
+<link rel="icon" href="/web/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/web/manifest.webmanifest">
+<meta name="theme-color" content="#f6f7f9">
+<script>
+// единственный инлайн-блок (CSP по хешу): тема до отрисовки + регистрация SW
+try {
+  let t = localStorage.getItem("dirigo-theme");
+  // миграция старых id тем (префикс сменился) — без неё у текущих
+  // пользователей тема молча сбрасывалась бы на дефолтную
+  if (t && t.startsWith("vf-")) { t = "oc-" + t.slice(3); localStorage.setItem("dirigo-theme", t); }
+  // по умолчанию — Modern Light; выбранная пользователем тема сохраняется
+  document.documentElement.dataset.theme = t || "modern-light";
+  const c = localStorage.getItem("dirigo-contrast");
+  if (c) document.documentElement.dataset.contrast = c;
+} catch {}
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+}
+</script>
+<link rel="stylesheet" href="/web/vendor/xterm.css">
+<link rel="stylesheet" href="/web/style.css">
+</head>
+<body>
+<!-- Демон не отвечает: оболочку мог показать service worker из кэша,
+     поэтому состояние связи надо называть прямо, а не сырым «Failed to fetch». -->
+<div class="oc-offlinebar hidden" id="offline-bar" role="status">
+  <span class="oc-offlinebar__dot" aria-hidden="true"></span>
+  <span class="oc-offlinebar__text"><b data-i18n="Нет связи с демоном">Нет связи с демоном</b>
+    <span data-i18n="Пульт показывает последнее, что успел загрузить. Запустите демон и нажмите «Повторить».">Пульт показывает последнее, что успел загрузить. Запустите демон и нажмите «Повторить».</span></span>
+  <button class="oc-btn oc-btn--sm" id="offline-retry" data-i18n="Повторить">Повторить</button>
+</div>
+<div id="app" class="oc-app">
+
+  <!-- ═══════════ ЛЕВАЯ ПАНЕЛЬ ═══════════ -->
+  <aside id="sidebar" class="oc-side">
+    <header class="oc-side__top">
+      <div class="oc-brand">
+        <svg class="oc-brand__mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6 14.7 9l6.7 2.4-6.7 2.5L12 21.4 9.3 13.9 2.6 11.4 9.3 8.9ZM12 7.2l-.9 2.3-2.4.8 2.4.9.9 2.3.9-2.3 2.4-.9-2.4-.8Z"/></svg>
+        <span class="oc-brand__name">Dirigo</span>
+        <span class="oc-ver" id="ver-badge">1.1</span>
+      </div>
+      <button id="side-collapse" class="oc-icon-btn" title="Скрыть меню (слева)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 6l-6 6 6 6"/></svg>
+      </button>
+    </header>
+
+    <div class="oc-side__search">
+      <button id="cmdk-btn" class="oc-search" title="Поиск (⌘K)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <span>Поиск</span><kbd>⌘K</kbd>
+      </button>
+    </div>
+
+    <nav class="oc-side__nav">
+      <button class="oc-navitem" id="nav-overview" title="Обзор">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Обзор</span>
+      </button>
+      <button class="oc-navitem" id="nav-new" title="Создать сессию">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Создать</span>
+      </button>
+    </nav>
+
+    <div class="oc-side__sessions" id="sessions-pane">
+      <div class="oc-side__label">
+        <span>Проекты</span>
+        <button id="add-project" class="oc-icon-btn oc-icon-btn--tiny" title="Добавить проект (git)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <span class="oc-count" id="sessions-count">0</span>
+      </div>
+      <div class="oc-side__list" id="sessions-scroll">
+        <div class="oc-empty" id="sessions-empty">Пока пусто — создайте первую сессию</div>
+      </div>
+    </div>
+
+    <nav class="oc-side__foot">
+      <button class="oc-navitem oc-navitem--active" id="nav-chat" title="Разговор">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/></svg>
+        <span>Разговор</span>
+      </button>
+      <button class="oc-navitem" id="nav-board" title="Доска режимов">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="11" rx="1.5"/><rect x="16" y="4" width="5" height="14" rx="1.5"/></svg>
+        <span>Доска</span>
+      </button>
+      <button class="oc-navitem" id="nav-evidence" title="Доказательства происхождения изменений">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span data-i18n="Доказательства">Доказательства</span>
+      </button>
+      <button class="oc-navitem" id="nav-history" title="История версий">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+        <span>История</span>
+      </button>
+      <button class="oc-navitem" id="nav-stats" title="Статистика и расход">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        <span>Статистика</span>
+      </button>
+      <button class="oc-navitem" id="nav-settings" title="Настройки">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.24.6.84 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.03Z"/></svg>
+        <span>Настройки</span>
+      </button>
+      <div class="oc-side__theme">
+        <span class="oc-side__themelabel">Тема</span>
+        <select id="theme-select" class="oc-input oc-input--theme" title="Оформление">
+          <option value="oc-dark">Тёмная</option>
+          <option value="oc-light">Светлая</option>
+          <option value="oc-midnight">Полночь</option>
+          <option value="oc-emerald">Изумруд</option>
+          <option value="oc-slate">Сланец</option>
+          <option value="oc-mono">Моно</option>
+        </select>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ═══════════ ЦЕНТР ═══════════ -->
+  <main class="oc-main">
+    <div class="oc-tabs" id="session-tabs">
+      <div class="oc-tabs__scroll" id="tabs-scroll"></div>
+    </div>
+
+    <!-- вид: сессия (лента) -->
+    <section class="oc-view oc-view--chat" id="view-chat">
+      <div class="oc-feed" id="feed"></div>
+      <form class="oc-composer" id="composer" autocomplete="off">
+        <textarea id="prompt" rows="1" placeholder="Что далее?" title="Enter — отправить в очередь, Shift+Enter — перенос строки"></textarea>
+        <div class="oc-composer__hint">
+          <span id="composer-keys">Enter — отправить · Shift+Enter — новая строка</span>
+          <span class="oc-composer__right">
+            <span class="oc-ctx" id="ctx-meter" title="Занятый контекст (оценка по символам)"><span id="ctx-used">0k</span>/<span id="ctx-max">1M</span><span class="oc-ctx__bar"><span class="oc-ctx__fill" id="ctx-fill" style="width:0%"></span></span></span>
+            <button type="button" class="oc-btn oc-btn--ghost oc-btn--sm" id="mic-btn" title="Голосовой ввод (Web Speech API)">🎤</button>
+            <span id="quick-model" class="oc-chip" title="Модель сессии"></span>
+            <span id="composer-agent" class="oc-chip">—</span>
+            <button type="submit" class="oc-btn oc-btn--primary" id="send-btn">Отправить</button>
+          </span>
+        </div>
+      </form>
+    </section>
+
+    <!-- вид: терминал (по центру, табом как чат) -->
+    <section class="oc-view oc-view--term hidden" id="view-term">
+      <div class="oc-term">
+        <div class="oc-term__head">
+          <span class="oc-chip oc-chip--mono" id="term-name">терминал</span>
+          <span class="muted small" id="term-dir"></span>
+          <span class="oc-term__acts">
+            <button class="oc-btn oc-btn--ghost oc-btn--sm" id="term-clear" title="Очистить вывод">Очистить</button>
+            <button class="oc-btn oc-btn--danger oc-btn--sm" id="term-kill" title="Закрыть терминал">Закрыть</button>
+          </span>
+        </div>
+        <!-- настоящий терминал (xterm.js): ввод прямо в окне, Ctrl+C, стрелки, Tab -->
+        <div class="oc-xterm oc-xterm--shell" id="term-xterm"></div>
+      </div>
+    </section>
+
+    <!-- вид: обзор (дашборд по проектам) -->
+    <section class="oc-view hidden" id="view-overview">
+      <div class="oc-view__head">
+        <h2>Обзор</h2>
+        <span class="muted small" id="ov-totals">—</span>
+        <div class="oc-view__actions"><button class="oc-btn oc-btn--ghost oc-btn--sm" id="ov-refresh" title="Обновить">↻</button></div>
+      </div>
+      <div class="oc-overview" id="overview-pane">
+        <div class="oc-ov__grid" id="ov-cards"></div>
+        <div class="oc-ov__grid">
+          <div class="oc-stat"><div class="oc-stat__label">Сессии по дням</div><div class="oc-bars" id="ov-days"></div></div>
+          <div class="oc-stat"><div class="oc-stat__label">Токены по агентам</div><div class="oc-usage-bar" id="ov-agents"></div><div class="oc-usage-legend" id="ov-agents-legend"></div></div>
+          <div class="oc-stat"><div class="oc-stat__label">Коммиты по проектам</div><div class="oc-bars" id="ov-commits"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- вид: доска -->
+    <section class="oc-view hidden" id="view-board">
+      <div class="oc-view__head"><h2>Доска режимов</h2><div class="oc-view__actions"><select id="board-project" class="oc-input"></select></div></div>
+      <div class="oc-board" id="board-cols"></div>
+    </section>
+
+    <!-- вид: история -->
+    <section class="oc-view hidden" id="view-evidence">
+      <div class="oc-view__head">
+        <b data-i18n="Доказательства">Доказательства</b>
+        <span class="muted small" id="ev-summary">—</span>
+        <div class="oc-view__actions">
+          <button class="oc-btn oc-btn--sm" id="ev-verify" data-i18n="Проверить">Проверить</button>
+          <button class="oc-btn oc-btn--sm oc-btn--primary" id="ev-export" data-i18n="Выгрузить для аудита">Выгрузить для аудита</button>
+        </div>
+      </div>
+      <div class="oc-evidence" id="evidence-pane">
+        <div class="oc-empty" data-i18n="Пока нет применённых изменений — пакеты появятся после первого «Применить».">Пока нет применённых изменений — пакеты появятся после первого «Применить».</div>
+      </div>
+    </section>
+
+    <section class="oc-view hidden" id="view-history">
+      <div class="oc-view__head"><h2>История версий</h2><div class="oc-view__actions"><select id="history-project" class="oc-input"></select></div></div>
+      <div class="oc-history" id="history-pane"></div>
+    </section>
+
+    <!-- вид: статистика -->
+    <section class="oc-view hidden" id="view-stats">
+      <div class="oc-view__head"><h2>Статистика</h2></div>
+      <div class="oc-stats" id="stats-pane"></div>
+    </section>
+
+    <!-- вид: файл (по центру основного окна — дерево справа остаётся на месте) -->
+    <section class="oc-view oc-view--file hidden" id="view-file">
+      <div class="oc-view__head">
+        <span class="oc-chip oc-chip--mono" id="file-modal-name">—</span>
+        <span class="muted small" id="file-modal-meta"></span>
+        <div class="oc-view__actions">
+          <button class="oc-btn oc-btn--ghost" id="file-modal-close" title="Закрыть (Esc)">✕ Закрыть</button>
+        </div>
+      </div>
+      <pre class="oc-file-modal__code" id="file-modal-code"></pre>
+    </section>
+
+    <!-- вид: настройки (полный порт v2: среда/агенты/ключи/удалёнка) -->
+    <section class="oc-view hidden" id="view-settings">
+      <div class="oc-view__head">
+        <h2>Настройка</h2>
+        <span class="muted small">всё в пару кликов: среда → агенты → ключи → удалёнка</span>
+      </div>
+      <div class="setup-steps" id="setup-steps">
+        <div class="setup-step active" data-step="env"><span class="ss-num">1</span> Среда</div>
+        <div class="setup-step" data-step="agents"><span class="ss-num">2</span> Агенты</div>
+        <div class="setup-step" data-step="keys"><span class="ss-num">3</span> Ключи</div>
+        <div class="setup-step" data-step="remote"><span class="ss-num">4</span> Удалёнка</div>
+      </div>
+      <div class="oc-settings" id="settings-pane">
+        <div class="setup-pane active" data-pane="env">
+          <div class="oc-setblock"><h3>Среда</h3>
+            <div id="env-check"><div class="oc-empty">проверяем…</div></div>
+            <div class="oc-rp__row" style="margin-top:8px"><button class="oc-btn oc-btn--primary" id="env-fix">Поставить недостающее</button></div>
+          </div>
+        </div>
+        <div class="setup-pane" data-pane="agents">
+          <div class="oc-setblock"><h3>Агенты</h3>
+            <div class="muted small" id="setup-summary">проверяем…</div>
+            <div id="setup-agents"></div>
+            <div class="oc-rp__row" style="margin-top:8px">
+              <span class="muted small">выбрано: <b id="sel-count">0</b></span>
+              <button class="oc-btn" id="setup-select-missing">Отметить недостающих</button>
+              <button class="oc-btn oc-btn--primary" id="setup-install-selected">Установить выбранные</button>
+            </div>
+            <div id="setup-jobs" style="margin-top:10px"></div>
+          </div>
+        </div>
+        <div class="setup-pane" data-pane="keys">
+          <div class="oc-setblock"><h3>Ключи провайдеров</h3>
+            <div id="setup-keys"></div>
+          </div>
+        </div>
+        <div class="setup-pane" data-pane="remote">
+          <div class="oc-setblock"><h3>Удалённые машины</h3>
+            <div class="oc-rp__row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
+              <input id="m-name" class="oc-input" placeholder="имя (необязательно)" style="width:140px">
+              <input id="m-host" class="oc-input" placeholder="host / IP" style="width:140px">
+              <input id="m-user" class="oc-input" placeholder="user" style="width:90px">
+              <input id="m-port" class="oc-input" placeholder="порт" style="width:70px">
+              <input id="m-daemon" class="oc-input" placeholder="демон-порт" style="width:90px">
+              <input id="m-key" class="oc-input" placeholder="ssh-ключ" style="width:120px">
+              <button class="oc-btn oc-btn--primary" id="m-add">Добавить</button>
+            </div>
+            <div id="machines-list"></div>
+            <div class="setup-tunnel" id="tunnel-block">
+              <h3 style="margin-top:12px">Публичный доступ (cloudflared)</h3>
+              <div class="oc-rp__row">
+                <button class="oc-btn oc-btn--primary" id="tunnel-start">Включить туннель</button>
+                <button class="oc-btn" id="tunnel-stop">Выключить</button>
+                <span class="muted small" id="tunnel-url">выключен</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="oc-setblock"><h3>Оформление</h3>
+          <div class="oc-theme-dots" id="theme-dots"></div>
+        </div>
+        <div class="oc-setblock"><h3 data-i18n="Язык">Язык</h3>
+          <div class="oc-setrow"><span>Язык интерфейса</span>
+            <select id="lang-select" class="oc-input" style="margin-left:auto;width:150px"></select></div>
+        </div>
+        <div class="oc-setblock"><h3 data-i18n="Шлюз персональных данных">Шлюз персональных данных</h3>
+          <div class="oc-setrow"><span data-i18n="Режим">Режим</span>
+            <select id="pii-mode" class="oc-input" style="margin-left:auto;width:220px">
+              <option value="off" data-i18n="Выключен">Выключен</option>
+              <option value="warn" data-i18n="Предупреждать">Предупреждать</option>
+              <option value="redact" data-i18n="Заменять">Заменять</option>
+              <option value="block" data-i18n="Блокировать">Блокировать</option>
+            </select></div>
+          <div class="muted small" data-i18n="Проверяются задача и каждое сообщение агенту (до отправки), а также строки, которые агент добавил в файлы (до «Применить» и Commit). Сами найденные значения нигде не сохраняются — только тип, файл и номер строки.">Проверяются задача и каждое сообщение агенту (до отправки), а также строки, которые агент добавил в файлы (до «Применить» и Commit). Сами найденные значения нигде не сохраняются — только тип, файл и номер строки.</div>
+          <div class="muted small" data-i18n="Ищет: e-mail, телефон, IBAN, номер карты (по алгоритму Луна — для проверки возьмите 4111 1111 1111 1111), ключи и токены, ФИО с отчеством или инициалами, и ваши слова ниже.">Ищет: e-mail, телефон, IBAN, номер карты (по алгоритму Луна — для проверки возьмите 4111 1111 1111 1111), ключи и токены, ФИО с отчеством или инициалами, и ваши слова ниже.</div>
+          <div class="oc-setrow" style="align-items:flex-start"><textarea id="pii-terms" class="oc-input" rows="3" style="flex:1" placeholder="свои слова — по одному в строке: ФИО клиентов, названия компаний, номера договоров"></textarea>
+            <button class="oc-btn oc-btn--sm" id="pii-terms-save" data-i18n="Сохранить">Сохранить</button></div>
+          <div class="oc-setrow"><input id="pii-sample" class="oc-input" style="flex:1" placeholder="проверить текст: почта, карта, телефон, ФИО…">
+            <button class="oc-btn oc-btn--sm" id="pii-check" data-i18n="Проверить">Проверить</button></div>
+          <div class="muted small" id="pii-result"></div>
+        </div>
+        <div class="oc-setblock" id="kn-block"><h3 data-i18n="База знаний компании">База знаний компании</h3>
+          <div class="muted small" data-i18n="CoAlly Nexus — база знаний по MCP: решения и контекст задач остаются в компании и находятся по смыслу. Ключ: coally.cortexally.ai → Settings → API Keys (cnx_…).">CoAlly Nexus — база знаний по MCP: решения и контекст задач остаются в компании и находятся по смыслу. Ключ: coally.cortexally.ai → Settings → API Keys (cnx_…).</div>
+          <div class="oc-setrow">
+            <button class="oc-btn oc-btn--sm" id="kn-coally" data-i18n="Подставить адрес CoAlly">Подставить адрес CoAlly</button>
+            <label class="oc-chip" style="cursor:pointer;margin-left:auto"><input type="checkbox" id="kn-enabled"> <span data-i18n="Включить выгрузку">Включить выгрузку</span></label></div>
+          <div class="oc-setrow"><span>URL</span>
+            <input id="kn-url" class="oc-input" style="margin-left:auto;flex:1;min-width:0" placeholder="https://coally.cortexally.ai/mcp"></div>
+          <div class="oc-setrow"><span data-i18n="Ключ">Ключ</span>
+            <input id="kn-key" class="oc-input" type="password" autocomplete="off" style="margin-left:auto;flex:1;min-width:0" placeholder="cnx_…"></div>
+          <div class="oc-setrow"><span data-i18n="Проект">Проект</span>
+            <input id="kn-project" class="oc-input" style="margin-left:auto;flex:1;min-width:0" placeholder="billing"></div>
+          <div class="oc-setrow">
+            <button class="oc-btn oc-btn--sm oc-btn--primary" id="kn-save" data-i18n="Сохранить">Сохранить</button>
+            <button class="oc-btn oc-btn--sm" id="kn-test" data-i18n="Проверить связь">Проверить связь</button></div>
+          <div class="muted small" data-i18n="После каждого применённого изменения в базу знаний уходит запись о задаче: автор, решения, затронутые модули. Всё проходит через шлюз персональных данных.">После каждого применённого изменения в базу знаний уходит запись о задаче: автор, решения, затронутые модули. Всё проходит через шлюз персональных данных.</div>
+          <div class="muted small" id="kn-result"></div>
+          <div class="oc-setrow"><input id="kn-query" class="oc-input" style="flex:1" placeholder="найти в базе знаний: как у нас устроен расчёт кредита?">
+            <button class="oc-btn oc-btn--sm" id="kn-search" data-i18n="Найти">Найти</button></div>
+          <pre class="oc-kn-out" id="kn-out" hidden></pre>
+          <div class="oc-setrow" style="margin-top:8px">
+            <button class="oc-btn oc-btn--sm oc-btn--primary" id="kn-agents-add" data-i18n="Подключить CoAlly к агентам">Подключить CoAlly к агентам</button>
+            <button class="oc-btn oc-btn--sm" id="kn-agents-remove" data-i18n="Убрать из агентов">Убрать из агентов</button></div>
+          <div class="muted small" data-i18n="Добавляет сервер coally-nexus в настройки MCP каждого установленного агента (Claude Code, Devin, OpenCode, Kilo, Cline, Cursor, Freebuff, ZCode, Hermes…): агенты смогут сами искать и сохранять контекст — и в пульте, и при запуске вручную. Ваши серверы и настройки остаются; перед первой правкой сохраняется копия файла.">Добавляет сервер coally-nexus в настройки MCP каждого установленного агента (Claude Code, Devin, OpenCode, Kilo, Cline, Cursor, Freebuff, ZCode, Hermes…): агенты смогут сами искать и сохранять контекст — и в пульте, и при запуске вручную. Ваши серверы и настройки остаются; перед первой правкой сохраняется копия файла.</div>
+          <div class="oc-kn-agents" id="kn-agents"></div>
+        </div>
+        <div class="oc-setblock"><h3 data-i18n="Компаньон">Компаньон</h3>
+          <div id="companion-pane">
+            <div class="oc-setrow"><span data-i18n="Роль">Роль</span>
+              <select id="cmp-role" class="oc-input" style="margin-left:auto;width:200px"></select></div>
+            <div class="oc-setrow"><span data-i18n="Тон">Тон</span>
+              <select id="cmp-tone" class="oc-input" style="margin-left:auto;width:200px"></select></div>
+            <div class="oc-setrow"><span data-i18n="Модель">Модель</span>
+              <select id="cmp-model" class="oc-input" style="margin-left:auto;width:320px"></select></div>
+            <div class="muted small" id="cmp-model-hint" data-i18n="Ответ идёт через провайдера (providers.json); ключ — из секретов демона">Ответ идёт через провайдера (providers.json); ключ — из секретов демона</div>
+            <div class="oc-setrow">
+              <button class="oc-btn" id="cmp-save" data-i18n="Сохранить настройки">Сохранить настройки</button>
+              <button class="oc-btn" id="cmp-clear" title="Очистить лог диалога" data-i18n="Очистить лог">Очистить лог</button>
+            </div>
+            <div class="oc-companion-log" id="cmp-log"><div class="oc-empty" data-i18n="Задайте вопрос — ответ появится здесь">Задайте вопрос — ответ появится здесь</div></div>
+            <div class="oc-setrow">
+              <input id="cmp-input" class="oc-input" style="flex:1" placeholder="Спросить компаньона о сессиях, задачах и планах" data-i18n-ph="Спросить компаньона о сессиях, задачах и планах" />
+              <button class="oc-btn" id="cmp-send" data-i18n="Отправить">Отправить</button>
+            </div>
+          </div>
+        </div>
+        <div class="oc-setblock"><h3>Импорт / экспорт</h3>
+          <div class="oc-setrow"><button class="oc-btn" id="btn-export" title="Скачать бэкап data/db.json">Экспорт данных</button>
+          <button class="oc-btn" id="btn-import" title="Загрузить бэкап">Импорт</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- пустое состояние -->
+    <section class="oc-view oc-view--empty hidden" id="view-empty">
+      <div class="oc-hero">
+        <h1 class="oc-hero__title">Соберите рабочий процесс<br>в одном окне</h1>
+        <p class="oc-hero__sub">Агенты работают в копии проекта. Вы смотрите изменения и решаете, что попадёт в проект.</p>
+        <div class="oc-hero__cards" id="hero-cards">
+          <button class="oc-startcard" data-act="go-setup">
+            <span class="oc-startcard__num">1</span>
+            <span class="oc-startcard__title">Проверить окружение</span>
+            <span class="oc-startcard__text">Мастер найдёт, что уже стоит, и доустановит агентов и зависимости.</span>
+          </button>
+          <button class="oc-startcard" data-act="add-project">
+            <span class="oc-startcard__num">2</span>
+            <span class="oc-startcard__title">Добавить проект</span>
+            <span class="oc-startcard__text">Любой git-репозиторий на этой машине. Оригинал остаётся нетронутым.</span>
+          </button>
+          <button class="oc-startcard" data-act="new-session">
+            <span class="oc-startcard__num">3</span>
+            <span class="oc-startcard__title">Запустить задачу</span>
+            <span class="oc-startcard__text">Выберите агента и режим. Результат придёт на ревью построчным диффом.</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════ ПРАВАЯ ПАНЕЛЬ ═══════════ -->
+  <aside class="oc-right hidden" id="right-panel">
+    <!-- Свёрнутая панель: узкий рельс — те же разделы иконками со счётчиками -->
+    <nav class="oc-right__rail" id="rp-rail" aria-label="Панель сессии (свёрнута)">
+      <button class="oc-rail-btn" id="rp-expand" title="Развернуть панель"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6l-6 6 6 6"/><path d="M20 4v16"/></svg></button>
+      <span class="oc-rail-sep"></span>
+      <button class="oc-rail-btn" data-rail="changes" title="Изменения"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5v3.5a3.5 3.5 0 0 0 3.5 3.5h6"/></svg><span class="oc-rail-badge" id="rail-changes">0</span></button>
+      <button class="oc-rail-btn" data-rail="files" title="Файлы"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></button>
+      <button class="oc-rail-btn" data-rail="term" title="Терминал"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l4 4-4 4"/><path d="M12 17h7"/></svg><span class="oc-rail-badge" id="rail-term" hidden>0</span></button>
+      <span class="oc-rail-sep"></span>
+      <button class="oc-rail-btn" id="rail-editor" title="Открыть копию в редакторе"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
+    </nav>
+    <div class="oc-right__tabs">
+      <button class="oc-rtab oc-rtab--active" id="rtab-changes">Изменения <span class="oc-count" id="changes-count">0</span></button>
+      <button class="oc-rtab" id="rtab-files">Файлы</button>
+      <button class="oc-rtab" id="rtab-term" title="Терминалы сессии">Терминал <span class="oc-count" id="term-count">0</span></button>
+      <button class="oc-icon-btn oc-right__collapse" id="rp-collapse" title="Свернуть панель"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 6l6 6-6 6"/><path d="M4 4v16"/></svg></button>
+    </div>
+
+    <!-- Изменения -->
+    <div class="oc-right__pane" id="rpane-changes">
+      <div class="oc-rp__status" id="rp-status" title="Статус работы агента"></div>
+      <div class="oc-rp__head">
+        <span id="rp-branch" class="oc-chip">—</span>
+        <button class="oc-btn oc-btn--ghost" id="btn-open-editor" title="Открыть папку проекта в редакторе/проводнике">Открыть в редакторе</button>
+      </div>
+      <div class="oc-rp__note" id="rp-mode-note" hidden></div>
+      <div class="oc-rp__gitinit" id="rp-gitinit" hidden></div>
+      <div class="oc-rp__staged" id="rp-staged"></div>
+      <div class="oc-rp__commit">
+        <div class="oc-rp__row oc-rp__row--copy" id="rp-copy-row">
+          <button class="oc-btn oc-btn--primary" id="btn-apply" title="Перенести изменения копии в рабочий проект">Применить в проект</button>
+          <button class="oc-btn" id="btn-revert" title="Откатить копию к точке возврата">Вернуть как было</button>
+        </div>
+        <div class="oc-rp__git" id="rp-git-row">
+          <textarea id="commit-msg" class="oc-input" rows="2" placeholder="feat: что изменилось"></textarea>
+          <div class="oc-rp__row oc-rp__row--git">
+            <button class="oc-btn oc-btn--primary" id="btn-commit" title="Закоммитить все изменения в репозиторий проекта">Commit</button>
+            <button class="oc-btn" id="btn-push" title="Отправить ветку на origin">Push</button>
+            <button class="oc-btn" id="btn-pr" title="Создать Pull request">PR</button>
+            <button class="oc-btn" id="btn-merge" title="Влить в main">Merge</button>
+          </div>
+        </div>
+      </div>
+      <div class="oc-rp__unstaged" id="rp-unstaged"></div>
+      <div class="oc-rp__checks" id="rp-checks"></div>
+    </div>
+
+    <!-- Файлы -->
+    <div class="oc-right__pane hidden" id="rpane-files">
+      <div class="oc-rp__head"><span class="oc-chip oc-chip--mono" id="files-root">—</span></div>
+      <div class="oc-filetree" id="file-tree"></div>
+    </div>
+
+    <!-- Терминалы: список справа-снизу, окно — в центре табом -->
+    <div class="oc-right__pane hidden" id="rpane-term">
+      <div class="oc-rp__head">
+        <span class="oc-chip">Терминалы</span>
+        <button class="oc-btn oc-btn--primary oc-btn--sm" id="term-add" title="Новый терминал в папке сессии">＋ Терминал</button>
+        <button class="oc-btn oc-btn--ghost oc-btn--sm" id="term-hide" title="Скрыть раздел">⌄</button>
+      </div>
+      <div class="oc-termlist" id="term-list"></div>
+    </div>
+  </aside>
+
+  <!-- команды ⌘K -->
+  <div class="oc-cmdk hidden" id="cmdk">
+    <div class="oc-cmdk__box">
+      <input id="cmdk-input" class="oc-cmdk__input" placeholder="Сессия, действие, файл…" autocomplete="off">
+      <div class="oc-cmdk__list" id="cmdk-list"></div>
+    </div>
+  </div>
+
+  <div class="oc-toasts" id="toasts"></div>
+
+  <!-- Телефон: затемнение под выехавшим сайдбаром -->
+  <div class="oc-scrim" id="side-scrim" hidden></div>
+
+  <!-- Телефон: нижняя навигация. На узком экране боковое меню уезжает в шторку,
+       иначе на 390px оставался рельс-огрызок и половина экрана пустовала. -->
+  <nav class="oc-bottombar" aria-label="Основная навигация">
+    <button class="oc-bnav" data-bnav="side" aria-label="Проекты">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18" stroke-linecap="round"/></svg>
+      <span>Проекты</span>
+    </button>
+    <button class="oc-bnav" data-bnav="chat" aria-label="Разговор">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z" stroke-linejoin="round"/></svg>
+      <span>Чат</span>
+    </button>
+    <button class="oc-bnav" data-bnav="overview" aria-label="Обзор">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v4h-7zM13 11h7v9h-7zM4 14h7v6H4z" stroke-linejoin="round"/></svg>
+      <span>Обзор</span>
+    </button>
+    <button class="oc-bnav" data-bnav="board" aria-label="Доска">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 5h5v14H4zM10 5h5v9h-5zM16 5h4v6h-4z" stroke-linejoin="round"/></svg>
+      <span>Доска</span>
+    </button>
+    <button class="oc-bnav" data-bnav="settings" aria-label="Настройки">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6" stroke-linecap="round"/></svg>
+      <span>Ещё</span>
+    </button>
+  </nav>
+</div>
+<!-- эмулятор терминала для режима «Терминал (TUI)» (вендорен: scripts/vendor-xterm.ts) -->
+<script src="/web/vendor/xterm.js"></script>
+<script src="/web/vendor/addon-fit.js"></script>
+<script src="/web/vendor/addon-unicode11.js"></script>
+<script type="module" src="/web/app.js"></script>
+</body>
+</html>

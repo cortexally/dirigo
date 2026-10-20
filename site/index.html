@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dirigo - провенанс ИИ-кода: подписанная запись о каждой строке, написанной агентом</title>
+    <meta name="description" content="Dirigo - self-hosted пульт ИИ-агентов, который ведёт запись происхождения кода. На каждое применение изменений он выдаёт подписанный пакет доказательств: агент, модель, хеш промпта, прогнанные проверки, возвраты агенту, кто одобрил и какой вышел коммит. Коммиты несут git-трейлеры, журнал сессии связан цепочкой хешей, и подделка в нём видна. Шлюз персональных данных проверяет задачу, сообщения агенту и код, который агент написал. Открытый код MIT, ноль npm-зависимостей." />
+    <meta name="theme-color" content="#0a0d14" />
+    <link rel="canonical" href="https://dirigo.cortexally.ai/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dirigo" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:url" content="https://dirigo.cortexally.ai/" />
+    <meta property="og:title" content="Dirigo - провенанс ИИ-кода" />
+    <meta property="og:description" content="Запись о том, кто написал каждую строку, создаётся в момент, когда её пишет агент. Подписанный пакет доказательств на каждое применение, git-трейлеры в коммите, выгрузка для аудита. Self-host, открытый код MIT." />
+    <meta property="og:image" content="assets/og.png" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="420" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dirigo - провенанс ИИ-кода" />
+    <meta name="twitter:description" content="Подписанный пакет доказательств на каждое применение изменений: агент, модель, хеш промпта, проверки, кто одобрил, итоговый коммит. Запись создаётся внутри цикла генерации." />
+    <meta name="twitter:image" content="assets/og.png" />
+    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="icon" type="image/svg+xml" href="assets/art/logo.svg" />
+    <script src="assets/app.js" defer></script>
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@graph":[
+        {"@type":"SoftwareApplication","name":"Dirigo","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows (self-host)","license":"https://opensource.org/licenses/MIT","description":"Пульт ИИ-агентов, который ведёт запись происхождения кода: на каждое применение изменений выдаёт подписанный Ed25519 пакет доказательств (агент, модель, хеш промпта, проверки, возвраты агенту, кто одобрил, итоговый коммит), пишет git-трейлеры в коммит, выгружает аудиторский пакет за период и ловит подделку журнала.","offers":[{"@type":"Offer","name":"Self-host (MIT)","price":"0","priceCurrency":"EUR"}]}
+      ]}
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#top" data-i18n="a11y.skip">К содержимому</a>
+    <!-- не display:none: в скрытом так SVG браузер не рисует градиенты, и в светлой теме
+         тайлы значков агентов становились прозрачными (белый глиф на белом) -->
+    <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+  <!--
+    Иконки агентов Dirigo — единый визуальный язык: скруглённый тайл с
+    градиентом + узнаваемый глиф. Инлайн-использование через <use href="#ag-*">.
+  -->
+  <defs>
+    <linearGradient id="g-opencode" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7c5cff"/><stop offset="1" stop-color="#4f2fd4"/></linearGradient>
+    <linearGradient id="g-kilo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#0284c7"/></linearGradient>
+    <linearGradient id="g-cursor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient>
+    <linearGradient id="g-devin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#6d28d9"/></linearGradient>
+    <linearGradient id="g-hermes" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f472b6"/><stop offset="1" stop-color="#be185d"/></linearGradient>
+    <linearGradient id="g-zcode" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#34d399"/><stop offset="1" stop-color="#059669"/></linearGradient>
+    <linearGradient id="g-minimax" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fb7185"/><stop offset="1" stop-color="#be123c"/></linearGradient>
+    <linearGradient id="g-claude" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#da7756"/><stop offset="1" stop-color="#bd5836"/></linearGradient>
+    <linearGradient id="g-codex" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1f2937"/><stop offset="1" stop-color="#0b1220"/></linearGradient>
+    <linearGradient id="g-copilot" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#94a3b8"/><stop offset="1" stop-color="#334155"/></linearGradient>
+    <linearGradient id="g-gemini" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f59e0b"/><stop offset="1" stop-color="#b45309"/></linearGradient>
+    <linearGradient id="g-freebuff" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2dd4bf"/><stop offset="1" stop-color="#0f766e"/></linearGradient>
+    <linearGradient id="g-cline" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c084fc"/><stop offset="1" stop-color="#7e22ce"/></linearGradient>
+  </defs>
+
+  <!-- opencode: терминальный курсор в скобке -->
+  <symbol id="ag-opencode" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-opencode)"/>
+    <path d="M9 11h14M9 16h9M9 21h11" stroke="#fff" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+    <path d="M21 20.5l3 2.5-3 2.5z" fill="#fff"/>
+  </symbol>
+
+  <!-- kilo: молния K -->
+  <symbol id="ag-kilo" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-kilo)"/>
+    <path d="M11 8v16M11 16l8-8M11 16l7 7" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- cursor: курсор-стрелка -->
+  <symbol id="ag-cursor" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-cursor)"/>
+    <path d="M10 8l13 7-5.5 1.5L15 22z" fill="#fff"/>
+  </symbol>
+
+  <!-- devin: шестерёнчатый круг -->
+  <symbol id="ag-devin" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-devin)"/>
+    <circle cx="16" cy="16" r="6" fill="none" stroke="#fff" stroke-width="2.6"/>
+    <path d="M16 5v4M16 23v4M5 16h4M23 16h4M8.7 8.7l2.8 2.8M20.5 20.5l2.8 2.8M23.3 8.7l-2.8 2.8M11.5 20.5l-2.8 2.8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- hermes: крыло -->
+  <symbol id="ag-hermes" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-hermes)"/>
+    <path d="M7 21c4-9 10-13 18-13-2 3-2 6 0 8-4 1-7 4-8 8-2-1-4-2-5-3 1-3 1-6-1-8 1 5 0 9-4 8z" fill="#fff"/>
+  </symbol>
+
+  <!-- zcode: Z + молния -->
+  <symbol id="ag-zcode" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-zcode)"/>
+    <path d="M10 9h12l-9 10h9" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M19 21l4 4-4 4" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- minimax: две вершины M -->
+  <symbol id="ag-minimax" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-minimax)"/>
+    <path d="M7 23V9l9 9 9-9v14" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- claude: реальный спарк Anthropic -->
+  <symbol id="ag-claude" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-claude)"/>
+    <g transform="translate(4 4)"><path fill="#fff" d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/></g>
+  </symbol>
+
+  <!-- codex: реальный узел OpenAI -->
+  <symbol id="ag-codex" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-codex)"/>
+    <g transform="translate(4 4)"><path fill="#fff" d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></g>
+  </symbol>
+
+  <!-- copilot: крылья/код -->
+  <symbol id="ag-copilot" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-copilot)"/>
+    <path d="M10 12l-4 4 4 4M22 12l4 4-4 4M18 9l-4 14" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- gemini: искра -->
+  <symbol id="ag-gemini" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-gemini)"/>
+    <path d="M16 5c2 6 6 9 11 10-5 1-9 4-11 12-2-8-6-11-11-12 5-1 9-4 11-12z" fill="#fff"/>
+  </symbol>
+
+  <!-- freebuff: кольца -->
+  <symbol id="ag-freebuff" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-freebuff)"/>
+    <circle cx="12" cy="16" r="5.5" fill="none" stroke="#fff" stroke-width="2.4"/>
+    <circle cx="20" cy="16" r="5.5" fill="none" stroke="#fff" stroke-width="2.4" opacity=".65"/>
+  </symbol>
+
+  <!-- cline: треугольник-искра -->
+  <symbol id="ag-cline" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-cline)"/>
+    <path d="M16 7l9 18H7z" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M16 14v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+  </symbol>
+</svg>
+    <!-- ============================ шапка ============================ -->
+    <header class="header" id="header">
+      <div class="wrap header__in">
+        <a class="brand" href="#top" aria-label="Dirigo — на главную">
+          <svg class="brand__mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="29" height="29" rx="9" fill="url(#lg)" />
+            <path d="M9 22.5V9.5m7 13v-8m7 8v-13" stroke="#fff" stroke-width="2.4" stroke-linecap="round" />
+            <defs>
+              <linearGradient id="lg" x1="0" y1="0" x2="32" y2="32">
+                <stop stop-color="#7c5cff" /><stop offset="1" stop-color="#22d3ee" />
+              </linearGradient>
+            </defs>
+          </svg>
+          Dirigo <span class="brand__sub" data-i18n="brand.sub">пульт ИИ-агентов</span>
+        </a>
+        <nav class="nav" id="nav" aria-label="Основная навигация">
+          <a href="#how" data-i18n="nav.how">Как работает</a>
+          <a href="#edge" data-i18n="nav.edge">Отличия</a>
+          <a href="#evidence" data-i18n="nav.evidence">Доказательства</a>
+          <a href="#modes" data-i18n="nav.modes">Режимы</a>
+          <a href="#agents" data-i18n="nav.agents">Агенты</a>
+          <a href="#security" data-i18n="nav.security">Безопасность</a>
+          <a href="#pricing" data-i18n="nav.pricing">Цены</a>
+          <a href="#faq" data-i18n="nav.faq">Вопросы</a>
+        </nav>
+        <div class="header__cta">
+          <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему сайта" title="Светлая / тёмная тема">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </button>
+          <div class="lang-toggle" role="group" aria-label="Язык сайта">
+            <button data-lang="ru" class="on">RU</button>
+            <button data-lang="en">EN</button>
+          </div>
+          <a class="btn btn--ghost btn--sm btn--icon" href="https://github.com/cortexally/dirigo" rel="noopener" target="_blank" aria-label="GitHub">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5A11.5 11.5 0 00.5 12a11.5 11.5 0 007.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.26 3.4.96.1-.75.4-1.26.73-1.55-2.56-.3-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 015.8 0c2.2-1.5 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.18c0 .31.2.67.8.56A11.5 11.5 0 0023.5 12 11.5 11.5 0 0012 .5z"/></svg>
+            <span>GitHub</span>
+          </a>
+          <a class="btn btn--primary btn--sm" href="#download" data-i18n="nav.download" data-track="buy" data-label="nav">Установить</a>
+          <button class="burger" id="burger" aria-label="Меню" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- ============================ hero ============================ -->
+      <section class="hero">
+        <div class="hero__glow" aria-hidden="true"></div>
+        <div class="hero__grid" aria-hidden="true"></div>
+        <div class="wrap hero__in">
+          <div class="hero__copy">
+            <div class="hero__badges reveal">
+              <span class="pill"><i class="dot"></i><span data-i18n="hero.badge1">Открытый код, MIT · self-host</span></span>
+              <span class="pill"><span data-i18n="hero.badge2">59 наборов тестов · 1488 проверок</span></span>
+              <span class="pill"><span data-i18n="hero.badge3">ноль npm-зависимостей</span></span>
+            </div>
+            <h1 class="h1 reveal reveal--d1"><span data-i18n="hero.title1">Запись о том, кто написал каждую строку,</span><br /><span class="grad-text" data-i18n="hero.title2">создаётся в момент, когда её пишет агент</span></h1>
+            <p class="lead reveal reveal--d2" data-i18n="hero.lead">
+              Dirigo стоит внутри цикла генерации, между вашей задачей и вашим проектом.
+              Поэтому он знает агента и модель, хеш промпта, каждую прогнанную проверку,
+              сколько раз работа ушла обратно агенту, кто нажал «Применить» и какой вышел
+              коммит — и на каждое применение выдаёт подписанный пакет доказательств.
+              По готовому коммиту такую запись уже не собрать.
+            </p>
+            <div class="hero__cta reveal reveal--d3">
+              <a class="btn btn--primary btn--lg" href="#download" data-track="buy" data-label="hero">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14" /></svg>
+                <span data-i18n="hero.cta1">Установить одной командой</span>
+              </a>
+              <a class="btn btn--ghost btn--lg" href="#evidence" data-track="cta" data-label="hero-evidence"><span data-i18n="hero.cta2">Что лежит в пакете доказательств</span></a>
+            </div>
+            <div class="hero__meta reveal reveal--d4">
+              <span><b>13</b> <span data-i18n="hero.meta1">агентов в реестре</span></span>
+              <span><b>4</b> <span data-i18n="hero.meta2">режима работы</span></span>
+              <span><b>~18k</b> <span data-i18n="hero.meta3">строк на Bun</span></span>
+              <span data-i18n="hero.meta4">ваши ключи, ваш код, ваша машина</span>
+            </div>
+          </div>
+
+          <!-- интерактивный макет пульта: кликабельная реплика интерфейса -->
+          <div class="hero__shot reveal reveal--d2" id="heroShot">
+            <div class="hero__floor" aria-hidden="true"></div>
+            <div class="hero__tilt" id="heroTilt">
+              <div class="appmock" id="appmock" role="application" aria-label="Интерактивный макет пульта Dirigo: сессии, чат с агентами, доска режимов, история версий, настройки и панель изменений с кнопкой «Применить в проект»">
+                <div class="appmock__bar">
+                  <div class="win__dots"><i></i><i></i><i></i></div>
+                  <span class="appmock__title">dirigo · <span data-i18n="am.wintitle">пульт</span></span>
+                  <div class="appmock__tabs" id="amTabs"></div>
+                  <div class="appmock__live"><i></i><span data-i18n="am.live">live</span></div>
+                </div>
+                <div class="appmock__body">
+                  <aside class="appmock__side">
+                    <button class="am-search" id="amSearch" type="button">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                      <span data-i18n="am.search">Поиск</span><kbd>⌘K</kbd>
+                    </button>
+                    <div class="am-side__label"><span data-i18n="am.sessions">Проекты</span><span class="am-count" id="amCount">3</span></div>
+                    <button class="am-pgroup" type="button" data-am-psgroup aria-expanded="true">
+                      <span class="am-group__chev">▸</span><span data-i18n="am.proj1">api-gateway</span><span class="am-count">3</span>
+                    </button>
+                    <div class="am-sessions" id="amSessions"></div>
+                    <div class="am-side__label"><span data-i18n="am.agentsLabel">Агенты</span></div>
+                    <div class="am-agents" id="amAgents"></div>
+                    <div class="am-themes" id="amThemes" role="group" aria-label="Тема макета"></div>
+                  </aside>
+                  <div class="appmock__main" id="amView"></div>
+                  <div class="appmock__right">
+                    <div class="am-rtabs" id="amRtabs"></div>
+                    <div class="am-rbody" id="amRight"></div>
+                  </div>
+                </div>
+                <div class="am-toasts" id="amToasts" aria-live="polite"></div>
+              </div>
+            </div>
+            <p class="shot-note" data-i18n="hero.shotnote">Интерактивный макет интерфейса — можно кликать. Реальные скриншоты пульта — ниже по странице.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ проблема ============================ -->
+      <section class="section section--alt" id="problem">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="prob.kicker">Проблема</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="prob.title1">Один агент уже не вывозит.</span><br /><span data-i18n="prob.title2">Второго в тот же проект не запустить.</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="prob.lead">
+              Как только задач становится больше одной, упираешься в три стены подряд —
+              и ни одну из них не чинит ещё один чат с моделью.
+            </p>
+          </div>
+          <div class="grid grid--3 grid--gap-lg">
+            <article class="card card--prob reveal">
+              <span class="card__num">01</span>
+              <h3 class="h3" data-i18n="prob.c1h">Агенты дерутся за рабочий каталог</h3>
+              <p data-i18n="prob.c1p">Два агента в одном репозитории переписывают файлы друг друга, ломают индекс git и отменяют чужие правки. Ждать, пока первый закончит, — значит работать по одной задаче за раз.</p>
+            </article>
+            <article class="card card--prob reveal reveal--d1">
+              <span class="card__num">02</span>
+              <h3 class="h3" data-i18n="prob.c2h">Проверки запускает человек</h3>
+              <p data-i18n="prob.c2p">Вы читаете диф, тратите внимание, а потом выясняется, что сборка падает и тесты красные. Фильтр стоит после вас, хотя должен стоять до.</p>
+            </article>
+            <article class="card card--prob reveal reveal--d2">
+              <span class="card__num">03</span>
+              <h3 class="h3" data-i18n="prob.c3h">Каждая машина настраивается руками</h3>
+              <p data-i18n="prob.c3p">Поставить пять CLI-агентов, прописать ключи, проверить версии, поднять доступ с ноутбука — вечер работы, и так на каждой новой машине.</p>
+            </article>
+          </div>
+          <p class="answer-line reveal reveal--d2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            <span data-i18n="prob.answer">Dirigo закрывает все три: копия проекта на каждого агента, автопроверки до человека, установка агентов из интерфейса.</span>
+          </p>
+        </div>
+      </section>
+
+      <!-- ============================ как это работает: три шага ============================ -->
+      <section class="section clips" id="how">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="how.kicker">Как это работает</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="how.title1">Три шага</span> <span class="grad-text" data-i18n="how.title2">от задачи до кода в проекте</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="how.lead">
+              Вы описываете задачу словами. Дальше пульт делает копию проекта, прогоняет
+              проверки и возвращает вам результат на решение — применить или откатить.
+            </p>
+          </div>
+
+          <div class="clips__triptych">
+            <!-- шаг 1: задача → изолированная копия -->
+            <article class="clip reveal" id="clip1">
+              <span class="clip__step" data-i18n="how.s1">Шаг 1</span>
+              <div class="clip__screen">
+                <div class="clip__bar"><div class="win__dots"><i></i><i></i><i></i></div><span data-i18n="how.bar1">dirigo — новая сессия</span></div>
+                <div class="clip__row"><span class="acc">Kilo Code</span><span style="margin-left:auto" data-i18n="how.copytype">копия: git-worktree</span></div>
+                <div class="clip__prompt"><span class="oc-type" style="--oc-seq:1" data-i18n="how.t1">Добавь округление цены в чеке и тест на него</span><span class="oc-caret" style="--oc-seq:2"></span></div>
+                <span class="clip__btn oc-flash" style="--oc-seq:3" data-i18n="how.run">▶ Запустить</span>
+                <div class="clip__row oc-seq" style="--oc-seq:5;margin-top:10px"><span class="ok">✓</span><span data-i18n="how.r1">worktree создан · точка возврата сохранена</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:7"><span class="ok">✓</span><span data-i18n="how.r2">ваш рабочий каталог не тронут</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:9"><span class="ok">✓</span><span data-i18n="how.r3">агент работает, вы продолжаете своё</span></div>
+                <div class="clip__bar-line oc-seq" style="--oc-seq:4"><i class="oc-grow" style="--oc-seq:6;width:100%"></i></div>
+              </div>
+              <div class="clip__label">
+                <h3 data-i18n="how.c1h">Задача словами — агент в изолированной копии</h3>
+                <p data-i18n="how.c1p">Каждая сессия получает собственный git-worktree и точку возврата. Параллельных агентов столько, сколько вытянет машина, и они не пересекаются.</p>
+              </div>
+              <button class="clip__replay" data-replay="clip1"><span data-i18n="how.replay">↻ проиграть сценарий</span></button>
+            </article>
+
+            <!-- шаг 2: автопроверки и автовозврат -->
+            <article class="clip reveal reveal--d1" id="clip2">
+              <span class="clip__step" data-i18n="how.s2">Шаг 2</span>
+              <div class="clip__screen">
+                <div class="clip__bar"><div class="win__dots"><i></i><i></i><i></i></div><span data-i18n="how.bar2">dirigo — проверки в копии</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:1"><span class="acc">›</span><span data-i18n="how.chk0">команды проекта найдены сами: bun test · eslint · build</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:3"><span class="warn">✗</span><span data-i18n="how.chk1">bun test — 23/24, упал round.test.ts</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:5"><span class="acc">↩</span><span data-i18n="how.chk2">возврат агенту с текстом ошибки (итерация 1 из 2)</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:7"><span class="ok">✓</span><span data-i18n="how.chk3">bun test — 24/24</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:8"><span class="ok">✓</span><span data-i18n="how.chk4">eslint — 0 ошибок · build — ok</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:10"><span class="ok">✓</span><span data-i18n="how.chk5">только теперь результат показывается вам</span></div>
+                <div class="clip__bar-line oc-seq" style="--oc-seq:2"><i class="oc-grow" style="--oc-seq:6;width:100%"></i></div>
+              </div>
+              <div class="clip__label">
+                <h3 data-i18n="how.c2h">Проверки гоняются до человека</h3>
+                <p data-i18n="how.c2p">Пульт сам находит команды проверок проекта (npm, make, pytest, cargo, just) и запускает их в копии. Сломанная правка не доходит до вас — она уходит обратно агенту.</p>
+              </div>
+              <button class="clip__replay" data-replay="clip2"><span data-i18n="how.replay">↻ проиграть сценарий</span></button>
+            </article>
+
+            <!-- шаг 3: построчное ревью и применение -->
+            <article class="clip reveal reveal--d2" id="clip3">
+              <span class="clip__step" data-i18n="how.s3">Шаг 3</span>
+              <div class="clip__screen">
+                <div class="clip__bar"><div class="win__dots"><i></i><i></i><i></i></div><span data-i18n="how.bar3">dirigo — дифф копии</span></div>
+                <div class="clip__row"><span style="color:var(--text)">round-price.ts</span><span style="margin-left:auto;color:var(--ok)" data-i18n="how.newf">новый +8 −0</span></div>
+                <div class="clip__diff">
+                  <div class="add oc-seq" style="--oc-seq:2">1&nbsp;&nbsp;+ export function roundPrice(p: number) {</div>
+                  <div class="add oc-seq" style="--oc-seq:3">2&nbsp;&nbsp;+&nbsp;&nbsp;return Math.round(p * 100) / 100;</div>
+                  <div class="add oc-seq" style="--oc-seq:4">3&nbsp;&nbsp;+ }</div>
+                  <div class="del oc-seq" style="--oc-seq:5">−&nbsp;&nbsp;<span data-i18n="how.old">return p * 1.2;&nbsp;&nbsp;(старый хелпер)</span></div>
+                </div>
+                <span class="clip__btn clip__btn--ok oc-flash" style="--oc-seq:7" data-i18n="how.apply">✓ Применить в проект</span>
+                <div class="clip__row oc-seq" style="--oc-seq:9;margin-top:10px"><span class="ok">✓</span><span data-i18n="how.r4">изменения перенесены, копия убрана</span></div>
+                <div class="clip__row oc-seq" style="--oc-seq:10"><span class="ok">✓</span><span data-i18n="how.r5">«вернуть как было» — одна кнопка</span></div>
+              </div>
+              <div class="clip__label">
+                <h3 data-i18n="how.c3h">Ревью построчно — решение за вами</h3>
+                <p data-i18n="how.c3p">Дифф с номерами строк и счётчиками. Замечание к строке уходит агенту на доработку. В проект код попадает только после явного «Применить».</p>
+              </div>
+              <button class="clip__replay" data-replay="clip3"><span data-i18n="how.replay">↻ проиграть сценарий</span></button>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ три отличия ============================ -->
+      <section class="section section--alt" id="edge">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="edge.kicker">Отличия</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="edge.title1">Три вещи, которые в этой категории</span><br /><span data-i18n="edge.title2">почти никто не делает</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="edge.lead">
+              Запускать агентов параллельно умеют многие. Поставить их на чистую машину,
+              не пустить к вам сломанное и оставить после себя доказательство того,
+              что произошло, — почти никто.
+            </p>
+          </div>
+
+          <article class="edge reveal">
+            <div class="edge__copy">
+              <span class="edge__n">01</span>
+              <h3 class="h3 h3--lg" data-i18n="edge.c1h">Provisioning в один клик</h3>
+              <p data-i18n="edge.c1p">
+                Мастер первого запуска из четырёх шагов: <b>Среда → Агенты → Ключи → Удалёнка</b>.
+                Пульт сам опрашивает систему, показывает найденные bun, git, npm, ssh и cloudflared
+                с путями и версиями, ставит недостающих агентов из интерфейса, подсказывает,
+                где взять ключ, и после установки опрашивает систему заново.
+              </p>
+              <ul class="ticks">
+                <li data-i18n="edge.c1l1">13 агентов в реестре — ставятся из UI, без команд в терминале</li>
+                <li data-i18n="edge.c1l2">детект среды с путями и версиями, а не «кажется, установлено»</li>
+                <li data-i18n="edge.c1l3">ключи хранятся локально и отдаются процессу агента через ENV</li>
+              </ul>
+            </div>
+            <div class="edge__shots">
+              <div class="wiz" role="img" aria-label="Мастер первого запуска Dirigo: четыре шага — Среда, Агенты, Ключи, Удалёнка; на шаге «Среда» найдены bun, git, npm и ssh, cloudflared отсутствует">
+                <div class="wiz__bar">
+                  <div class="win__dots"><i></i><i></i><i></i></div>
+                  <span data-i18n="wiz.title">dirigo — мастер первого запуска</span>
+                </div>
+                <ol class="wiz__steps">
+                  <li class="wiz__step wiz__step--on"><b>1</b><span data-i18n="wiz.s1">Среда</span></li>
+                  <li class="wiz__step"><b>2</b><span data-i18n="wiz.s2">Агенты</span></li>
+                  <li class="wiz__step"><b>3</b><span data-i18n="wiz.s3">Ключи</span></li>
+                  <li class="wiz__step"><b>4</b><span data-i18n="wiz.s4">Удалёнка</span></li>
+                </ol>
+                <div class="wiz__body">
+                  <div class="wiz__row"><i class="wiz__ok">✓</i><b>bun</b><span>1.4.3</span><code>~/.bun/bin/bun</code></div>
+                  <div class="wiz__row"><i class="wiz__ok">✓</i><b>git</b><span>2.43.0</span><code>/usr/bin/git</code></div>
+                  <div class="wiz__row"><i class="wiz__ok">✓</i><b>npm</b><span>10.8.2</span><code>/usr/bin/npm</code></div>
+                  <div class="wiz__row"><i class="wiz__ok">✓</i><b>ssh</b><span>9.6p1</span><code>/usr/bin/ssh</code></div>
+                  <div class="wiz__row wiz__row--miss"><i class="wiz__miss">!</i><b>cloudflared</b><span data-i18n="wiz.miss">не найден</span><code data-i18n="wiz.needtunnel">нужен для туннеля</code></div>
+                </div>
+                <div class="wiz__foot">
+                  <span class="wiz__btn" data-i18n="wiz.btn">Установить недостающее</span>
+                  <span class="wiz__hint" data-i18n="wiz.hint">4 из 5 готово · дальше — агенты</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="edge edge--rev reveal">
+            <div class="edge__copy">
+              <span class="edge__n">02</span>
+              <h3 class="h3 h3--lg" data-i18n="edge.c2h">Ревью-гейт с автовозвратом</h3>
+              <p data-i18n="edge.c2p">
+                Между агентом и вашим проектом стоит шлюз. Проверки проекта гоняются
+                в копии до того, как вы что-то увидите; сломанный результат возвращается
+                агенту с текстом ошибки (не больше двух итераций, чтобы не жечь токены).
+                До вас доходит только то, что собирается и проходит тесты — и дальше
+                решаете вы, построчно.
+              </p>
+              <ul class="ticks">
+                <li data-i18n="edge.c2l1">команды проверок определяются по проекту: npm, make, pytest, cargo, just</li>
+                <li data-i18n="edge.c2l2">построчный дифф с замечаниями: замечание к строке уходит агенту</li>
+                <li data-i18n="edge.c2l3">«Применить» и «вернуть как было» — две кнопки, обе с подтверждением</li>
+              </ul>
+            </div>
+            <div class="edge__shots edge__shots--one">
+              <figure class="flow-shot">
+                <img src="assets/art/diff.png" alt="Пульт Dirigo: дифф копии проекта с номерами строк и счётчиком добавленных и удалённых строк по двум файлам" width="900" height="760" loading="lazy" />
+                <figcaption><b data-i18n="edge.shot1h">Это не макет.</b> <span data-i18n="edge.shot1p">Экран диффа из работающего пульта: два файла, построчные изменения, счётчики.</span></figcaption>
+              </figure>
+            </div>
+          </article>
+
+          <div class="gate-wrap reveal">
+            <p class="gate-wrap__title" data-i18n="gate.title">Как устроен шлюз</p>
+              <div class="gate gate--row" role="img" aria-label="Схема ревью-гейта: результат агента проходит проверки, сломанное возвращается агенту, годное уходит на построчное ревью">
+                <div class="gate__node gate__node--agent"><span class="gate__label" data-i18n="gate.agent">Агент в копии</span><span class="gate__sub" data-i18n="gate.agentsub">git-worktree, точка возврата</span></div>
+                <div class="gate__arrow" aria-hidden="true"></div>
+                <div class="gate__node gate__node--check">
+                  <span class="gate__label" data-i18n="gate.checks">Проверки проекта</span>
+                  <span class="gate__sub" data-i18n="gate.checkssub">npm · make · pytest · cargo · just</span>
+                  <span class="gate__back" data-i18n="gate.back">✗ сломано — обратно агенту, ≤ 2 итерации</span>
+                </div>
+                <div class="gate__arrow" aria-hidden="true"></div>
+                <div class="gate__node gate__node--you">
+                  <span class="gate__label" data-i18n="gate.you">Вы: построчный дифф</span>
+                  <span class="gate__sub" data-i18n="gate.yousub">применить · замечание к строке · вернуть как было</span>
+                </div>
+                <div class="gate__arrow" aria-hidden="true"></div>
+                <div class="gate__node gate__node--repo"><span class="gate__label" data-i18n="gate.repo">Ваш проект</span><span class="gate__sub" data-i18n="gate.reposub">только то, что вы одобрили</span></div>
+              </div>
+          </div>
+
+          <article class="edge edge--third reveal">
+            <div class="edge__copy">
+              <span class="edge__n">03</span>
+              <h3 class="h3 h3--lg" data-i18n="edge.c3h">Провенанс: подписанная запись о каждом изменении от ИИ</h3>
+              <p data-i18n="edge.c3p">
+                Выдать доказательство может только тот, кто стоит <b>внутри цикла генерации</b>.
+                Пульт там и стоит, поэтому запись о происхождении кода не восстанавливается
+                задним числом по коммиту, а пишется в момент работы агента. На каждое
+                применение изменений собирается пакет и подписывается Ed25519.
+              </p>
+              <ul class="ticks">
+                <li data-i18n="edge.c3l1">журнал сессии только дописывается, каждое событие несёт хеш предыдущего</li>
+                <li data-i18n="edge.c3l2">коммит пульта несёт трейлеры, читаемые обычным git log</li>
+                <li data-i18n="edge.c3l3">выгрузка за период — один файл с открытым ключом и сводкой проверки</li>
+              </ul>
+            </div>
+            <div class="edge__shots edge__shots--one">
+              <div class="pack" role="img" aria-label="Карточка пакета доказательств в пульте Dirigo: печать «подпись и журнал целы», агент claude-code, модель claude-sonnet-4-5, проверки 3 из 3, один возврат агенту, одобрено пользователем, итоговый коммит и голова цепочки журнала">
+                <div class="pack__bar">
+                  <div class="win__dots"><i></i><i></i><i></i></div>
+                  <span data-i18n="pack.title">dirigo - пакет доказательств</span>
+                </div>
+                <div class="pack__seal"><i>✓</i><span data-i18n="pack.seal">подпись и журнал целы</span></div>
+                <dl class="pack__body">
+                  <div class="pack__row"><dt data-i18n="pack.k1">агент и модель</dt><dd class="mono">claude-code · claude-sonnet-4-5</dd></div>
+                  <div class="pack__row"><dt data-i18n="pack.k2">хеш промпта</dt><dd class="mono">sha256:4b1c..9f2e</dd></div>
+                  <div class="pack__row"><dt data-i18n="pack.k3">изоляция</dt><dd class="mono">worktree · base 3a7d10c</dd></div>
+                  <div class="pack__row"><dt data-i18n="pack.k4">проверки</dt><dd class="mono pack__ok">3/3 pass</dd></div>
+                  <div class="pack__row"><dt data-i18n="pack.k5">возвратов агенту</dt><dd class="mono">1</dd></div>
+                  <div class="pack__row"><dt data-i18n="pack.k6">одобрил</dt><dd class="mono">you · 17.10.2026 11:42</dd></div>
+                  <div class="pack__row"><dt data-i18n="pack.k7">коммит</dt><dd class="mono">7c1f0a9</dd></div>
+                  <div class="pack__row"><dt data-i18n="pack.k8">голова журнала</dt><dd class="mono">9f2c41ab3d7e5c80</dd></div>
+                </dl>
+                <div class="pack__foot">
+                  <span class="pack__btn" data-i18n="pack.b1">Проверить</span>
+                  <span class="pack__btn pack__btn--ghost" data-i18n="pack.b2">Выгрузить для аудита</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============================ доказательства ============================ -->
+      <section class="section" id="evidence">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="evi.kicker">Доказательства</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="evi.title1">Каждое «Применить» оставляет</span> <span class="grad-text" data-i18n="evi.title2">подписанный пакет доказательств</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="evi.lead">
+              Пакет собирается из того, что пульт и так видел: агент, промпт, проверки,
+              решение человека. Подпись - Ed25519 ключом вашего инстанса; ключ лежит
+              на вашей машине и наружу не уходит.
+            </p>
+          </div>
+
+          <div class="evi reveal">
+            <div class="evi__copy">
+              <h3 class="h3 h3--lg" data-i18n="evi.whath">Что лежит в пакете</h3>
+              <ul class="ticks evi__list">
+                <li data-i18n="evi.l1">агент и модель, которые выполняли задачу</li>
+                <li data-i18n="evi.l2">проект, задача и хеш промпта</li>
+                <li data-i18n="evi.l3">вид изоляции и базовый коммит, от которого шла работа</li>
+                <li data-i18n="evi.l4">каждый прогон проверок и его результат</li>
+                <li data-i18n="evi.l5">сколько раз сломанная работа возвращалась агенту</li>
+                <li data-i18n="evi.l6">сводка шлюза персональных данных: тип находки и количество</li>
+                <li data-i18n="evi.l7">кто одобрил изменение и когда</li>
+                <li data-i18n="evi.l8">файлы: что изменено, что удалено</li>
+                <li data-i18n="evi.l9">итоговый коммит</li>
+                <li data-i18n="evi.l10">голова цепочки журнала и версия продукта</li>
+              </ul>
+            </div>
+            <figure class="evi__shot">
+              <div class="term term--log" role="img" aria-label="Вывод git log для коммита, сделанного пультом: в теле сообщения трейлеры Dirigo-Agent, Dirigo-Model, Dirigo-Checks, Dirigo-Returned-To-Agent и Dirigo-Ledger-Head">
+                <div class="term__bar"><i class="mock__dots"><i></i><i></i><i></i></i><span>dirigo - git log</span></div>
+                <div class="term__body"><span class="p">$</span> <span class="c">git</span> log -1
+commit 7c1f0a9e2b4d8f31a6c5e0b97d4a2f18c3e6b5d0
+Author: you &lt;you@localhost&gt;
+Date:   Fri Oct 17 11:42:03 2026 +0200
+
+    <span data-i18n="evi.subject">checkout: округление цены в чеке и тест на него</span>
+
+    <span class="c">Dirigo-Agent:</span> claude-code
+    <span class="c">Dirigo-Model:</span> claude-sonnet-4-5
+    <span class="c">Dirigo-Checks:</span> 3/3 pass
+    <span class="c">Dirigo-Returned-To-Agent:</span> 1
+    <span class="c">Dirigo-Ledger-Head:</span> 9f2c41ab3d7e5c80<span class="term__cursor"></span></div>
+              </div>
+              <figcaption><b data-i18n="evi.logh">Трейлеры читает обычный git.</b> <span data-i18n="evi.logp">Коммит, который делает пульт, несёт их прямо в теле сообщения: ни наш интерфейс, ни наш формат для этого не нужны.</span></figcaption>
+            </figure>
+          </div>
+
+          <div class="grid grid--3 grid--gap-lg evi__cards">
+            <article class="card card--evi reveal">
+              <div class="card__icon card__icon--ok">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l2-2a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7.5-.5l-2 2a5 5 0 007 7l1-1"/></svg>
+              </div>
+              <h3 class="h3" data-i18n="evi.c1h">Подделка журнала видна</h3>
+              <p data-i18n="evi.c1p">Журнал сессии только дописывается, и каждое событие несёт хеш предыдущего. Вырезать событие, подменить его или переписать задним числом незаметно нельзя: проверка сверяет цепочку и показывает, где она рвётся. Это не обещание — есть тест, который подделывает журнал специально и ждёт, что подделку поймают.</p>
+            </article>
+            <article class="card reveal reveal--d1">
+              <div class="card__icon card__icon--ok">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M12 11v6m0 0l-2.5-2.5M12 17l2.5-2.5"/></svg>
+              </div>
+              <h3 class="h3" data-i18n="evi.c2h">Выгрузка для аудита — один файл</h3>
+              <p data-i18n="evi.c2p">Пакеты за выбранный период выгружаются одним JSON: сами пакеты, открытый ключ инстанса и сводка проверки подписей и цепочек. Этот файл и есть то, что уходит аудитору.</p>
+            </article>
+            <article class="card reveal reveal--d2">
+              <div class="card__icon card__icon--ok">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+              </div>
+              <h3 class="h3" data-i18n="evi.c3h">Проверяется без наших инструментов</h3>
+              <p data-i18n="evi.c3p">Подпись считается по стабильной сериализации пакета, открытый ключ лежит рядом в той же выгрузке. Проверить её может любой инструмент, умеющий Ed25519, — ставить Dirigo для этого не нужно.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ периметр: шлюз и база знаний ============================ -->
+      <section class="section section--alt" id="gateway">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="pii.kicker">Периметр</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="pii.title1">Шлюз персональных данных</span><br /><span class="grad-text" data-i18n="pii.title2">стоит перед агентом, а не после</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="pii.lead">
+              Проверяются задача и каждое сообщение агенту — до отправки, и каждая строка, которую агент добавил в код, — до «Применить» и коммита. Ищутся
+              e-mail, телефон, IBAN, номер карты (с проверкой Луна), секреты вида
+              sk-, ghp_, AKIA, xox*, JWT и публичный IP. Локальные адреса 127.*, 10.*
+              и 192.168.* утечкой не считаются.
+            </p>
+          </div>
+
+          <div class="grid grid--4 grid--gap-lg">
+            <article class="card card--prob pmode reveal">
+              <span class="card__num">off</span>
+              <h3 class="h3" data-i18n="pii.m1h">Выключен</h3>
+              <p data-i18n="pii.m1p">Проверка не выполняется: пульт не решает за вас, что считать персональными данными.</p>
+            </article>
+            <article class="card card--prob pmode reveal reveal--d1">
+              <span class="card__num">warn</span>
+              <h3 class="h3" data-i18n="pii.m2h">Предупреждать</h3>
+              <p data-i18n="pii.m2p">Режим по умолчанию. Находки показываются и пишутся в журнал: тип и количество, для кода — файл и строка. Решение остаётся за человеком.</p>
+            </article>
+            <article class="card card--prob pmode reveal reveal--d2">
+              <span class="card__num">redact</span>
+              <h3 class="h3" data-i18n="pii.m3h">Заменять</h3>
+              <p data-i18n="pii.m3p">Найденные значения заменяются метками до отправки. Агент видит структуру задачи, но не видит самих данных.</p>
+            </article>
+            <article class="card card--prob pmode reveal reveal--d3">
+              <span class="card__num">block</span>
+              <h3 class="h3" data-i18n="pii.m4h">Запрещать</h3>
+              <p data-i18n="pii.m4p">Задача или сообщение не уходят вовсе; код агента с находками не применяется и не коммитится. В журнал пишется факт срабатывания, осознанное исключение — тоже.</p>
+            </article>
+          </div>
+
+          <p class="answer-line reveal" id="piiPrinciple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            <span data-i18n="pii.principle">Сами найденные значения не сохраняются нигде: ни в журнале, ни в логе, ни в ответе API. Остаются только тип находки и количество. Иначе инструмент, который защищает персональные данные, сам становится их хранилищем.</span>
+          </p>
+
+          <article class="kb reveal" id="knowledge">
+            <div class="kb__copy">
+              <p class="eyebrow" data-i18n="kb.kicker">База знаний</p>
+              <h3 class="h3 h3--lg" data-i18n="kb.h">Знание о задаче остаётся внутри компании</h3>
+              <p data-i18n="kb.p">
+                Необязательно и выключено по умолчанию. Если включить, после применения
+                изменений запись о задаче уходит в вашу базу знаний — на ваш приёмник,
+                внутри вашего периметра, — и дальше ищется по смыслу, а не по точному
+                совпадению слов. Так опыт по задаче остаётся в компании, а не в чате,
+                который закрыли.
+              </p>
+              <ul class="ticks">
+                <li data-i18n="kb.l1">в записи: автор, агент и модель, принятые решения, затронутые модули, проверки, кто одобрил, ссылка на пакет</li>
+                <li data-i18n="kb.l2">выгрузка обязательно проходит через шлюз: в режиме block не уходит вовсе, в redact значения заменяются</li>
+                <li data-i18n="kb.l3">ключ приёмника наружу из API не отдаётся — только факт, что он задан</li>
+              </ul>
+            </div>
+            <div class="kb__shot">
+              <div class="krec" role="img" aria-label="Запись о задаче, уходящая в базу знаний компании: автор, агент и модель, затронутые модули, проверки, кто одобрил, ссылка на пакет доказательств и отметка о прохождении шлюза">
+                <div class="krec__bar"><span data-i18n="kb.rec">запись о задаче</span></div>
+                <dl class="krec__body">
+                  <div class="krec__row"><dt data-i18n="kb.k1">автор</dt><dd class="mono">you</dd></div>
+                  <div class="krec__row"><dt data-i18n="kb.k2">агент и модель</dt><dd class="mono">claude-code · claude-sonnet-4-5</dd></div>
+                  <div class="krec__row"><dt data-i18n="kb.k3">модули</dt><dd class="mono">checkout, billing</dd></div>
+                  <div class="krec__row"><dt data-i18n="kb.k4">проверки</dt><dd class="mono">3/3 pass</dd></div>
+                  <div class="krec__row"><dt data-i18n="kb.k5">одобрил</dt><dd class="mono">you · 17.10.2026 11:42</dd></div>
+                  <div class="krec__row"><dt data-i18n="kb.k6">пакет</dt><dd class="mono">ev_9f2c41ab</dd></div>
+                </dl>
+                <div class="krec__foot"><i>✓</i><span data-i18n="kb.gate">выгрузка прошла шлюз: redact, 1 находка</span></div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============================ режимы ============================ -->
+      <section class="section" id="modes">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="modes.kicker">Режимы</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="modes.title1">Четыре режима</span> <span class="grad-text" data-i18n="modes.title2">под размер задачи</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="modes.lead">От одной правки до цели, разбитой на части с автоматическим сведением результата. Режим переключается на лету — схема ниже живая.</p>
+          </div>
+
+          <!-- изометрическая схема (живая, переключается вместе с режимом) -->
+          <div class="vfm reveal" id="vfm" data-live="true">
+            <svg class="vfm-scene__floor" id="vfmFloor" viewBox="0 0 1132 448" fill="none" aria-hidden="true"></svg>
+            <div class="vfm-scene__air" id="vfmAir" aria-hidden="true"></div>
+          </div>
+
+          <div class="tabs reveal" role="tablist" aria-label="Режимы работы">
+            <button class="tab tab--on" role="tab" aria-selected="true" data-mode="solo">Solo</button>
+            <button class="tab" role="tab" aria-selected="false" data-mode="swarm">Swarm</button>
+            <button class="tab" role="tab" aria-selected="false" data-mode="fusion">Fusion</button>
+            <button class="tab" role="tab" aria-selected="false" data-mode="orchestrator">Orchestrator</button>
+          </div>
+
+          <div class="mode-panel mode-panel--on" data-panel="solo" role="tabpanel">
+            <div class="steps">
+              <div class="step"><span class="step__n">01</span><h4 data-i18n="modes.solo.s1h">Вы пишете задачу словами</h4><p data-i18n="modes.solo.s1p">Агент запускается в своей копии проекта, вы продолжаете работать.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">02</span><h4 data-i18n="modes.solo.s2h">Проверки гоняются сами</h4><p data-i18n="modes.solo.s2p">Тесты, линтер, сборка — до того, как вы увидите результат.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">03</span><h4 data-i18n="modes.solo.s3h">Вы смотрите дифф</h4><p data-i18n="modes.solo.s3p">Изменения построчно, ничего лишнего. Можно оставить замечание к строке.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">04</span><h4 data-i18n="modes.solo.s4h">Применить или откатить</h4><p data-i18n="modes.solo.s4p">Патч переносится в проект с подтверждением. «Вернуть как было» — тоже кнопка.</p></div>
+            </div>
+            <p class="mode-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              <span data-i18n="modes.solo.note">Режим по умолчанию: один агент, одна задача, максимальная простота.</span>
+            </p>
+          </div>
+
+          <div class="mode-panel" data-panel="swarm" role="tabpanel">
+            <div class="steps">
+              <div class="step"><span class="step__n">01</span><h4 data-i18n="modes.swarm.s1h">Задачу берут сразу несколько</h4><p data-i18n="modes.swarm.s1p">Одна цель уходит нескольким агентам параллельно.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">02</span><h4 data-i18n="modes.swarm.s2h">Модератор делит участки</h4><p data-i18n="modes.swarm.s2p">Каждый агент получает свою зону, пересечения по файлам исключены.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">03</span><h4 data-i18n="modes.swarm.s3h">Каждый пишет в своём участке</h4><p data-i18n="modes.swarm.s3p">Общая лента показывает прогресс всех агентов.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">04</span><h4 data-i18n="modes.swarm.s4h">Результаты сводятся в один патч</h4><p data-i18n="modes.swarm.s4p">Сведённый результат проходит тот же ревью-гейт, что и обычная сессия.</p></div>
+            </div>
+            <p class="mode-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              <span data-i18n="modes.swarm.note">Таймауты фаз и жёсткий модератор: рой не зависает на общих файлах.</span>
+            </p>
+          </div>
+
+          <div class="mode-panel" data-panel="fusion" role="tabpanel">
+            <div class="steps">
+              <div class="step"><span class="step__n">01</span><h4 data-i18n="modes.fusion.s1h">Один вопрос — разным моделям</h4><p data-i18n="modes.fusion.s1p">Несколько агентов отвечают независимо друг от друга.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">02</span><h4 data-i18n="modes.fusion.s2h">Ответы не правят проект</h4><p data-i18n="modes.fusion.s2p">Это режим выбора решения, а не параллельного кодинга.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">03</span><h4 data-i18n="modes.fusion.s3h">Варианты сравниваются</h4><p data-i18n="modes.fusion.s3p">Ответы сводятся в одно решение с обоснованием.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">04</span><h4 data-i18n="modes.fusion.s4h">Итог реализует один агент</h4><p data-i18n="modes.fusion.s4p">Выбранный вариант уходит в обычную сессию — с копией, проверками и ревью.</p></div>
+            </div>
+            <p class="mode-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              <span data-i18n="modes.fusion.note">Полезно на развилках архитектуры: сравнить подходы до того, как писать код.</span>
+            </p>
+          </div>
+
+          <div class="mode-panel" data-panel="orchestrator" role="tabpanel">
+            <div class="steps">
+              <div class="step"><span class="step__n">01</span><h4 data-i18n="modes.orch.s1h">Вы описываете цель целиком</h4><p data-i18n="modes.orch.s1p">«Сделать оплату и чеки» — без ручной декомпозиции.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">02</span><h4 data-i18n="modes.orch.s2h">Планировщик режет на части</h4><p data-i18n="modes.orch.s2p">К каждой части — критерий приёмки на обычном языке.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">03</span><h4 data-i18n="modes.orch.s3h">У каждой части своя копия</h4><p data-i18n="modes.orch.s3p">Части выполняются параллельно, каждая проходит проверки.</p><svg class="step__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+              <div class="step"><span class="step__n">04</span><h4 data-i18n="modes.orch.s4h">Пересечения разводятся</h4><p data-i18n="modes.orch.s4p">Конфликты между частями обрабатываются отдельным агентом, затем применение.</p></div>
+            </div>
+            <p class="mode-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              <span data-i18n="modes.orch.note">Лимиты шагов и дешёвые модели для планировщика — режим предсказуем по стоимости.</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ агенты ============================ -->
+      <section class="section section--alt" id="agents">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="agents.kicker">Агенты</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="agents.title1">Мы не конкурируем с агентами —</span><br /><span class="grad-text" data-i18n="agents.title2">мы их запускаем</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="agents.lead">
+              Dirigo подхватывает CLI-агентов, которые уже стоят в системе, и доустанавливает
+              недостающих. Вендор-независимо: ваши подписки и ключи, наш пульт поверх них.
+            </p>
+          </div>
+          <div class="marquee reveal reveal--d3" aria-label="Поддерживаемые агенты">
+            <div class="marquee__track" id="agentsTrack"></div>
+          </div>
+          <p class="agents__list reveal" data-i18n="agents.list">
+            <b>13 агентов в реестре:</b> Claude Code · Codex · OpenCode · Kilo · Cursor · Devin ·
+            Hermes · zcode · MiniMax · Copilot · Gemini · Freebuff · Cline.
+            Реестр находит их в PATH и в типовых местах установки на Linux, macOS и Windows.
+          </p>
+
+          <div class="ifaces reveal reveal--d2">
+            <h3 class="ifaces__title" data-i18n="ifaces.title">Пульт — не единственный вход</h3>
+            <div class="ifaces__grid">
+              <div class="iface">
+                <b data-i18n="ifaces.cli.t">CLI</b>
+                <span data-i18n="ifaces.cli.d">./orch — сессии, копии, диффы и применение из терминала и из скриптов.</span>
+              </div>
+              <div class="iface">
+                <b data-i18n="ifaces.mcp.t">MCP-сервер</b>
+                <span data-i18n="ifaces.mcp.d">Пульт отдаётся как набор инструментов любому MCP-клиенту.</span>
+              </div>
+              <div class="iface">
+                <b data-i18n="ifaces.sdk.t">TypeScript SDK</b>
+                <span data-i18n="ifaces.sdk.d">Типизированный клиент к тому же REST API, что и у веб-интерфейса.</span>
+              </div>
+              <div class="iface">
+                <b data-i18n="ifaces.docker.t">Docker</b>
+                <span data-i18n="ifaces.docker.d">docker compose up, каталог проектов монтируется внутрь.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ удалённый доступ ============================ -->
+      <section class="section deploy" id="remote">
+        <div class="wrap deploy__in">
+          <div>
+            <p class="eyebrow reveal" data-i18n="remote.kicker">Удалённый доступ</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="remote.title1">Пульт дома,</span><br /><span data-i18n="remote.title2">вы — где угодно</span></h2>
+            <p class="lead reveal reveal--d2" data-i18n="remote.lead">
+              Демон слушает на 127.0.0.1 — порт наружу не открывается. Доступ снаружи
+              идёт через Cloudflare-туннель или Tailscale, а интерфейс — это обычное
+              веб-приложение (PWA): открывается в браузере телефона и ставится на домашний экран.
+            </p>
+            <div class="flow">
+              <div class="flow__item reveal"><span class="flow__n">1</span><div><h4 data-i18n="remote.step1h">Порт закрыт по умолчанию</h4><p data-i18n="remote.step1p">Демон доступен только с самой машины; ничего не торчит в интернет.</p></div></div>
+              <div class="flow__item reveal reveal--d1"><span class="flow__n">2</span><div><h4 data-i18n="remote.step2h">Cloudflare-туннель в два клика</h4><p data-i18n="remote.step2p">Мастер проверяет, стоит ли cloudflared, и поднимает туннель к локальному демону.</p></div></div>
+              <div class="flow__item reveal reveal--d2"><span class="flow__n">3</span><div><h4 data-i18n="remote.step3h">Или Tailscale, если он у вас уже есть</h4><p data-i18n="remote.step3p">Пульт виден внутри вашей сети — без публичного адреса вообще.</p></div></div>
+              <div class="flow__item reveal reveal--d3"><span class="flow__n">4</span><div><h4 data-i18n="remote.step4h">Телефон — тот же пульт</h4><p data-i18n="remote.step4p">PWA ставится на домашний экран; код на телефон не копируется, он остаётся на машине.</p></div></div>
+            </div>
+          </div>
+          <div class="reveal reveal--d1">
+            <div class="term" role="img" aria-label="Пример работы мастера настройки: опрос среды, установка агентов, запуск туннеля">
+              <div class="term__bar"><i class="mock__dots"><i></i><i></i><i></i></i><span>dirigo — setup</span></div>
+              <div class="term__body"><span class="p">$</span> <span class="c">dirigo</span> setup discover
+<span class="d" data-i18n="term.discover"># опрос системы…</span>
+<span class="c">✓</span> bun           1.4.3   <span class="d">~/.bun/bin/bun</span>
+<span class="c">✓</span> git           2.43.0  <span class="d">/usr/bin/git</span>
+<span class="c">✓</span> npm           10.8.2  <span class="d">/usr/bin/npm</span>
+<span class="c">✓</span> ssh           9.6p1   <span class="d">/usr/bin/ssh</span>
+<span class="y">!</span> cloudflared   <span data-i18n="term.missing">нет</span>     <span class="d" data-i18n="term.needtunnel">нужен для туннеля</span>
+
+<span class="p">$</span> <span class="c">dirigo</span> setup agents
+<span class="c">✓</span> opencode      2.0.26  <span class="d" data-i18n="term.found">найден в PATH</span>
+<span class="c">✓</span> kilo          1.2.0   <span class="d" data-i18n="term.found2">найден в PATH</span>
+<span class="y">!</span> claude-code   <span data-i18n="term.missing2">нет</span>     <span class="d" data-i18n="term.keyneed">нужен ключ ANTHROPIC_API_KEY</span>
+
+<span class="p">$</span> <span class="c">dirigo</span> setup install claude-code
+<span class="d" data-i18n="term.queue"># очередь: 1 агент…  [########--] 78%</span>
+<span class="c">✓</span> claude-code   <span data-i18n="term.verified">установлен · при повторном опросе найден</span>
+
+<span class="p">$</span> <span class="c">dirigo</span> tunnel start
+<span class="c">✓</span> <span data-i18n="term.tunnelopen">туннель поднят — пульт доступен с телефона</span><span class="term__cursor"></span></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================ безопасность и self-host ============================ -->
+      <section class="section section--alt" id="security">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="sec.kicker">Безопасность и self-host</p>
+            <h2 class="h2 reveal reveal--d1"><span data-i18n="sec.title1">Код не покидает периметр.</span><br /><span data-i18n="sec.title2">Это проверяется, а не обещается.</span></h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="sec.lead">
+              У нас нет облака с вашим кодом — его просто негде хранить. Всё, что делает
+              пульт, происходит на вашей машине, а исходники целиком открыты.
+            </p>
+          </div>
+          <div class="grid grid--3 grid--gap-lg">
+            <article class="card reveal">
+              <div class="card__icon card__icon--ok">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+              </div>
+              <h3 class="h3" data-i18n="sec.c1h">Всё локально</h3>
+              <p data-i18n="sec.c1p">Демон, агенты, копии проекта и история — на вашей машине. Наружу уходят только запросы самих агентов к их провайдерам, по вашим ключам.</p>
+            </article>
+            <article class="card reveal reveal--d1">
+              <div class="card__icon card__icon--ok">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 118 0v3"/></svg>
+              </div>
+              <h3 class="h3" data-i18n="sec.c2h">Ключи и порты</h3>
+              <p data-i18n="sec.c2p">Ключи хранятся локально и передаются процессу агента через переменные окружения. Демон слушает 127.0.0.1; наружу — только туннель, который включаете вы.</p>
+            </article>
+            <article class="card reveal reveal--d2">
+              <div class="card__icon card__icon--ok">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+              </div>
+              <h3 class="h3" data-i18n="sec.c3h">Открыто и читаемо</h3>
+              <p data-i18n="sec.c3p">Лицензия MIT, около 18 тысяч строк на Bun и ноль npm-зависимостей: дерева зависимостей, в котором можно спрятать лишнее, просто нет.</p>
+            </article>
+          </div>
+          <div class="note-box reveal">
+            <span class="badge badge--soon" data-i18n="badge.soon">скоро</span>
+            <p data-i18n="sec.soon">Шлюз персональных данных и журнал происхождения входят в открытую часть — они описаны выше. Enterprise-слой поверх них — SSO и SCIM, интерфейс журнала аудита, политики доступа по ролям и SLA — доступен по запросу и развивается вместе с design-партнёрами в private beta, см. блок «Цены».</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ установка ============================ -->
+      <section class="section" id="download">
+        <div class="wrap">
+          <div class="cta reveal">
+            <div class="cta__glow" aria-hidden="true"></div>
+            <h2 class="h2"><span data-i18n="dl.title1">Установить —</span> <span class="grad-text" data-i18n="dl.title2">одна команда</span></h2>
+            <p class="lead lead--center" data-i18n="dl.lead">
+              Скрипт ставит Bun, если его нет, скачивает бандл с этого же домена,
+              сверяет SHA256, распаковывает в <code class="mono">~/.dirigo</code> и открывает
+              мастер первого запуска. Наружу ничего не открывает.
+            </p>
+
+            <div class="install">
+              <div class="install__row">
+                <span class="install__label" data-i18n="dl.os1">Linux / macOS</span>
+                <code class="install__code mono" id="cmd-unix">curl -fsSL https://dirigo.cortexally.ai/install.sh | sh</code>
+                <button class="install__copy" type="button" data-copy="#cmd-unix" data-track="buy" data-label="copy-unix" aria-label="Скопировать команду">
+                  <svg class="ico-copy" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+                  <svg class="ico-done" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="install__copytext" data-i18n="dl.copy">копировать</span>
+                </button>
+              </div>
+              <div class="install__row">
+                <span class="install__label" data-i18n="dl.os2">Windows</span>
+                <code class="install__code mono" id="cmd-win">irm https://dirigo.cortexally.ai/install.ps1 | iex</code>
+                <button class="install__copy" type="button" data-copy="#cmd-win" data-track="buy" data-label="copy-win" aria-label="Скопировать команду">
+                  <svg class="ico-copy" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+                  <svg class="ico-done" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="install__copytext" data-i18n="dl.copy2">копировать</span>
+                </button>
+              </div>
+              <div class="install__row">
+                <span class="install__label" data-i18n="dl.os3">Из исходников</span>
+                <code class="install__code mono" id="cmd-src">git clone https://github.com/cortexally/dirigo</code>
+                <button class="install__copy" type="button" data-copy="#cmd-src" data-track="buy" data-label="copy-src" aria-label="Скопировать команду">
+                  <svg class="ico-copy" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+                  <svg class="ico-done" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="install__copytext" data-i18n="dl.copy3">копировать</span>
+                </button>
+              </div>
+              <p class="install__status" id="copyStatus" role="status" aria-live="polite"></p>
+            </div>
+
+            <p class="install-hint" data-i18n="dl.hint">
+              Нужен Bun 1.4+ (ставится скриптом). Проверено на Linux (Ubuntu, bun 1.4.3);
+              macOS и Windows получают тот же бандл без нативных модулей,
+              но на них установку мы прогоняли реже.
+              Скрипт и бандл отдаются с того же домена по https, рядом лежит файл с контрольной суммой.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ цены ============================ -->
+      <section class="section section--alt" id="pricing">
+        <div class="wrap">
+          <div class="head-center">
+            <p class="eyebrow eyebrow--center reveal" data-i18n="price.kicker">Цены</p>
+            <h2 class="h2 reveal reveal--d1" data-i18n="price.title">Ядро бесплатное. Навсегда.</h2>
+            <p class="lead lead--center reveal reveal--d2" data-i18n="price.lead">Весь продукт — в открытом доступе по MIT. Платить за пульт не нужно ни сейчас, ни потом; Enterprise-слой для регулируемых команд — по запросу.</p>
+          </div>
+          <div class="price-grid">
+            <div class="price price--hot reveal">
+              <span class="price__tag" data-i18n="price.tag1">Всё включено</span>
+              <h3 class="price__name" data-i18n="price.name1">Self-host · MIT</h3>
+              <div class="price__sum"><span data-i18n="price.sum1">0</span> <small data-i18n="price.sum1s">навсегда</small></div>
+              <p class="price__who" data-i18n="price.who1">Разработчик, команда, свой сервер — без ограничений и регистрации</p>
+              <ul>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg><span data-i18n="price.li1a">Все 4 режима и все 13 агентов</span></li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg><span data-i18n="price.li1b">Изолированные копии, автопроверки, построчное ревью</span></li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg><span data-i18n="price.li1c">Мастер установки агентов и ключей</span></li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg><span data-i18n="price.li1d">Терминал, дашборд проекта, PWA</span></li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg><span data-i18n="price.li1e">Удалённый доступ: Cloudflare-туннель, Tailscale</span></li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg><span data-i18n="price.li1f">Ваши ключи и ваши токены — мы в них не участвуем</span></li>
+              </ul>
+              <a class="btn btn--primary" href="#download" data-i18n="price.cta1" data-track="buy" data-label="pricing">Установить</a>
+            </div>
+
+            <div class="price price--beta reveal reveal--d1" id="enterprise">
+              <span class="badge badge--beta" data-i18n="price.betabadge">private beta</span>
+              <h3 class="price__name" data-i18n="price.name2">Enterprise</h3>
+              <div class="price__sum price__sum--text" data-i18n="price.sum2">Набираем design-партнёров</div>
+              <p class="price__who" data-i18n="price.who2">Для команд в регулируемом контуре, готовых строить этот слой вместе с нами</p>
+              <p class="price__honest" data-i18n="price.honest">В открытой части: журнал происхождения, подписанные пакеты доказательств, git-трейлеры, выгрузка для аудита и шлюз персональных данных. Enterprise-слой — SSO и SCIM, интерфейс журнала аудита, политики доступа по ролям и SLA — развивается вместе с design-партнёрами под их реальные требования. Состав и условия — по запросу.</p>
+              <form class="ent-form" id="entForm" novalidate>
+                <div class="ent-form__grid">
+                  <label class="field">
+                    <span class="field__label" data-i18n="ent.name">Имя</span>
+                    <input class="field__input" type="text" name="name" autocomplete="name" required />
+                  </label>
+                  <label class="field">
+                    <span class="field__label" data-i18n="ent.email">E-mail</span>
+                    <input class="field__input" type="email" name="email" autocomplete="email" required />
+                  </label>
+                </div>
+                <label class="field">
+                  <span class="field__label" data-i18n="ent.company">Компания или команда</span>
+                  <input class="field__input" type="text" name="company" autocomplete="organization" />
+                </label>
+                <label class="field">
+                  <span class="field__label" data-i18n="ent.task">Какую задачу нужно закрыть</span>
+                  <textarea class="field__input field__input--area" name="task" rows="3"></textarea>
+                </label>
+                <button class="btn btn--primary btn--block" type="submit" data-i18n="ent.submit">Стать design-партнёром</button>
+                <p class="ent-form__note" id="entNote" role="status" aria-live="polite" data-i18n="ent.note">Заявка придёт команде Dirigo — ответим лично и предложим созвон.</p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ FAQ ============================ -->
+      <section class="section" id="faq">
+        <div class="wrap faq">
+          <p class="eyebrow reveal" data-i18n="faq.kicker">Вопросы</p>
+          <h2 class="h2 reveal reveal--d1" data-i18n="faq.title">Что обычно спрашивают</h2>
+          <div id="faqList"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============================ подвал ============================ -->
+    <footer class="footer">
+      <div class="wrap">
+        <div class="footer__grid">
+          <div class="footer__about">
+            <a class="brand" href="#top">
+              <svg class="brand__mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <rect x="1.5" y="1.5" width="29" height="29" rx="9" fill="url(#lg2)" />
+                <path d="M9 22.5V9.5m7 13v-8m7 8v-13" stroke="#fff" stroke-width="2.4" stroke-linecap="round" />
+                <defs>
+                  <linearGradient id="lg2" x1="0" y1="0" x2="32" y2="32">
+                    <stop stop-color="#7c5cff" /><stop offset="1" stop-color="#22d3ee" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              Dirigo
+            </a>
+            <p data-i18n="footer.about">Пульт ИИ-агентов, который ведёт запись происхождения кода: изолированные копии проекта, автопроверки до человека, построчное ревью и подписанный пакет доказательств на каждое применение. Ваши агенты, ваши ключи, ваш код.</p>
+            <a class="footer__gh" href="https://github.com/cortexally/dirigo" rel="noopener" target="_blank">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5A11.5 11.5 0 00.5 12a11.5 11.5 0 007.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.26 3.4.96.1-.75.4-1.26.73-1.55-2.56-.3-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 015.8 0c2.2-1.5 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.18c0 .31.2.67.8.56A11.5 11.5 0 0023.5 12 11.5 11.5 0 0012 .5z"/></svg>
+              <span>github.com/cortexally/dirigo</span>
+            </a>
+          </div>
+          <div>
+            <h5 data-i18n="footer.col1">Продукт</h5>
+            <ul>
+              <li><a href="#problem" data-i18n="nav.problem">Проблема</a></li>
+              <li><a href="#how" data-i18n="nav.how">Как работает</a></li>
+              <li><a href="#edge" data-i18n="nav.edge">Отличия</a></li>
+              <li><a href="#evidence" data-i18n="nav.evidence">Доказательства</a></li>
+              <li><a href="#gateway" data-i18n="nav.gateway">Периметр</a></li>
+              <li><a href="#modes" data-i18n="nav.modes">Режимы</a></li>
+              <li><a href="#pricing" data-i18n="nav.pricing">Цены</a></li>
+            </ul>
+          </div>
+          <div>
+            <h5 data-i18n="footer.col2">Разработчикам</h5>
+            <ul>
+              <li><a href="#download" data-i18n="footer.install">Установка</a></li>
+              <li><a href="#agents" data-i18n="nav.agents">Агенты</a></li>
+              <li><a href="#remote" data-i18n="nav.remote">Удалёнка</a></li>
+              <li><a href="#security" data-i18n="nav.security">Безопасность</a></li>
+              <li><a href="https://github.com/cortexally/dirigo" rel="noopener" target="_blank" data-i18n="footer.source">Исходный код</a></li>
+            </ul>
+          </div>
+          <div>
+            <h5 data-i18n="footer.col3">Контакт</h5>
+            <ul>
+              <li><a href="#faq" data-i18n="nav.faq">Вопросы</a></li>
+              <li><a href="#enterprise" data-i18n="footer.partners">Design-партнёрство</a></li>
+              <li><a href="https://github.com/cortexally/dirigo/issues" rel="noopener" target="_blank" data-i18n="footer.issues">Баги и предложения</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer__bottom">
+          <span data-i18n="footer.bottom1">© 2026 Dirigo - пульт ИИ-агентов и провенанс ИИ-кода · MIT</span>
+          <span data-i18n="footer.bottom2">Сделано для тех, кто сам решает, что попадёт в проект</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

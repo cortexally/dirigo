@@ -1,0 +1,15 @@
+{
+  "name": "Dirigo — команда ИИ-агентов",
+  "short_name": "Dirigo",
+  "description": "Пульт агентов: копии проекта, диффы, ревью, режимы Solo/Orchestrator/Swarm",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0e14",
+  "theme_color": "#7c5cff",
+  "icons": [
+    { "src": "/web/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/web/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

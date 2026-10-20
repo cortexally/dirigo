@@ -1,0 +1,92 @@
+/** Каталог внутри другого? */
+function isInside(child: string, parent: string): boolean {
+  const c = resolve(child).toLowerCase();
+  const p = resolve(parent).toLowerCase();
+  return c === p || c.startsWith(p.endsWith(sep) ? p : p + sep);
+}
+
+/** Живой ли процесс? */
+function pidAlive(pid: number): boolean {
+  if (!Number.isFinite(pid) || pid <= 0) return false;
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+/**
+ * Живые сессии в каталоге данных?
+ *
+ * Статус — не единственный признак живости: у сессии может быть живой
+ * процесс агента, даже когда статус врёт (например, «send» в режиме
+ * «Задача (CLI)» поднимает второй процесс, и его выход объявлял сессию
+ * готовой, пока основной агент ещё работал). Поэтому смотрим и на pid.
+ */
+function liveSessionsIn(dir: string): number {
+  try {
+    const db = JSON.parse(readFileSync(join(dir, "db.json"), "utf8"));
+    return (db.sessions ?? []).filter((s: any) =>
+      s?.status === "queued" || s?.status === "running" || (typeof s?.pid === "number" && pidAlive(s.pid))).length;
+  } catch { return 0; }
+}
+
+/** Живые копии проектов (реестр демона) в каталоге данных? */
+function copiesIn(dir: string): number {
+  try {
+    const raw = JSON.parse(readFileSync(join(dir, "work", "registry.json"), "utf8"));
+    return Array.isArray(raw) ? raw.length : 0;
+  } catch { return 0; }
+}
+
+/**
+ * Рабочие папки агентов в каталоге данных (data/work/<id>) — там, где агент
+ * пишет правки.
+ *
+ * Считаются и без реестра: демон мог не успеть (или не сумел) записать
+ * метаданные, а папка агента уже есть. Такой каталог сносить нельзя — агент
+ * потеряет рабочую папку («Working directory does not exist»).
+ */
+function workCopiesIn(dir: string): number {
+  try {
+    return readdirSync(join(dir, "work"), { withFileTypes: true }).filter((e) => e.isDirectory()).length;
+  } catch (e) {
+    // «work» нет — это нормально. Прочие ошибки не прячем: молчаливо
+    // сломанная проверка пропустила бы снос чужой рабочей папки.
+    if ((e as { code?: string })?.code === "ENOENT") return 0;
+    console.log(`ВНИМАНИЕ: не смог прочитать рабочие папки в ${dir}: ${String(e).slice(0, 120)}`);
+    return 0;
+  }
+}
+
+/**
+ * Снести каталог, не рубя его наполовину.
+ *
+ * На Windows папку, которую держит процесс (рабочий каталог агента), снести
+ * нельзя — обычный `rm -r` сносит ФАЙЛЫ внутри и падает на самой папке:
+ * агент теряет рабочую папку и правки. Поэтому сначала атомарное переименование
+ * «в сторону»: не прошло — папку не трогаем вообще (это и есть признак «здесь
+ * кто-то работает»); прошло — каталог отставлен, его можно сносить целиком.
+ */
+function removeTreeSafely(dir: string): boolean {
+  if (!existsSync(dir)) return true;
+  const aside = `${dir}.deleting-${Date.now()}`;
+  try { renameSync(dir, aside); } catch { return false; }
+  try { rmSync(aside, { recursive: true, force: true }); } catch { /* файлы держат — приберёт следующая чистка */ }
+  return !existsSync(dir);
+}
+
+/** Можно ли снести каталог данных? (старт набора: чужое состояние не трогаем) */
+function safeToWipe(dir: string): boolean {
+  if (isInside(process.cwd(), dir)) return false; // мы живём внутри — сносить нельзя
+  const ext = process.env.DIRIGO_DATA ? resolve(process.env.DIRIGO_DATA) : "";
+  if (ext && ext.toLowerCase() === resolve(dir).toLowerCase()) return false; // каталог задан извне — чужой
+  if (liveSessionsIn(dir) > 0) return false; // живой демон
+  if (copiesIn(dir) > 0) return false; // живые копии агентов
+  if (workCopiesIn(dir) > 0) return false; // рабочие папки агентов (даже без реестра)
+  return true;
+}
+
+/** Можно ли снести СВОЙ каталог набора в финале? (своё — можно, если никто не живёт) */
+function canRemoveOwn(dir: string): boolean {
+  if (isInside(process.cwd(), dir)) return false; // мы живём внутри
+  if (liveSessionsIn(dir) > 0) return false; // живая сессия
+  return true;
+}
+

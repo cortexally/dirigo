@@ -1,0 +1,11 @@
+node_modules/
+data/
+build/dist/
+build/.stage/
+build/suite-*.log
+build/pre-release-report.md
+.ui-audit-data-*/
+.smoke-*/
+*.log
+.env
+.DS_Store

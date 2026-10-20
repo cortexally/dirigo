@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>OG-превью Dirigo (утилита, не индексируется)</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { background: #06080d; display: grid; place-items: center; min-height: 100vh; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+      .card {
+        width: 800px; height: 420px; position: relative; overflow: hidden;
+        background:
+          radial-gradient(60% 70% at 12% 8%, rgba(124, 92, 255, 0.35), transparent 60%),
+          radial-gradient(46% 60% at 88% 20%, rgba(34, 211, 238, 0.18), transparent 65%),
+          linear-gradient(160deg, #0d1424 0%, #0a0d14 60%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex; flex-direction: column; justify-content: center; padding: 56px 64px;
+      }
+      .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 34px; }
+      .brand svg { width: 54px; height: 54px; }
+      .brand span { font-size: 30px; font-weight: 700; color: #f2f4f8; letter-spacing: -0.01em; }
+      h1 { font-size: 46px; line-height: 1.08; font-weight: 750; color: #f2f4f8; letter-spacing: -0.02em; max-width: 660px; }
+      h1 em { font-style: normal; background: linear-gradient(92deg, #a78bfa, #7c5cff 45%, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      p { margin-top: 18px; font-size: 19px; color: #9aa4b8; max-width: 620px; line-height: 1.4; }
+      .tags { display: flex; gap: 10px; margin-top: 30px; }
+      .tags span { font-size: 14px; font-weight: 600; color: #c4b5fd; padding: 7px 15px; border: 1px solid rgba(124, 92, 255, 0.4); border-radius: 999px; background: rgba(124, 92, 255, 0.1); }
+      .grid-bg { position: absolute; inset: 0; opacity: 0.4; background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(70% 60% at 60% 30%, #000, transparent); -webkit-mask-image: radial-gradient(70% 60% at 60% 30%, #000, transparent); }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card">
+      <div class="grid-bg"></div>
+      <div class="brand">
+        <svg viewBox="0 0 32 32" fill="none">
+          <rect x="1.5" y="1.5" width="29" height="29" rx="9" fill="url(#og)" />
+          <path d="M9 22.5V9.5m7 13v-8m7 8v-13" stroke="#fff" stroke-width="2.4" stroke-linecap="round" />
+          <defs><linearGradient id="og" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#7c5cff" /><stop offset="1" stop-color="#22d3ee" /></linearGradient></defs>
+        </svg>
+        <span>Dirigo</span>
+      </div>
+      <h1>Кто написал эти строки:<br /><em>подписанная запись<br />в момент генерации</em></h1>
+      <p>Пакет доказательств на каждое применение: агент, модель, хеш промпта, проверки, кто одобрил, коммит.</p>
+      <div class="tags"><span>self-host</span><span>MIT</span><span>Ed25519</span><span>git-трейлеры</span></div>
+    </div>
+  </body>
+</html>
