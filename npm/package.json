@@ -1,0 +1,33 @@
+{
+  "name": "dirigo",
+  "version": "0.1.0",
+  "description": "Installer helper for Dirigo — the self-hosted control layer for AI coding agents. Prints the verified install command for your platform.",
+  "license": "MIT",
+  "homepage": "https://dirigo.cortexally.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cortexally/dirigo.git",
+    "directory": "npm"
+  },
+  "bugs": "https://github.com/cortexally/dirigo/issues",
+  "keywords": [
+    "ai-agents",
+    "coding-agents",
+    "self-hosted",
+    "code-provenance",
+    "audit-trail",
+    "git-worktree",
+    "code-review"
+  ],
+  "type": "module",
+  "bin": {
+    "dirigo": "bin/dirigo.mjs"
+  },
+  "files": [
+    "bin/dirigo.mjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
